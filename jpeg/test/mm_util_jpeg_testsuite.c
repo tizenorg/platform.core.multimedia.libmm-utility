@@ -25,13 +25,13 @@
 #include <mm_ta.h>
 #include "mm_log.h"
 #include <mm_debug.h>
-#define _FILE 0
+#define _FILE 1
 #define _All 1
 
 int main(int argc, char *argv[])
 {
 	mm_util_jpeg_yuv_data decoded_data = {0,};
-	mm_util_jpeg_yuv_format fmt = MM_UTIL_JPEG_FMT_RGB888;
+	mm_util_jpeg_yuv_format fmt = MM_UTIL_JPEG_FMT_YUV420;
 	int ret = 0;
 
 	//g_type_init();  //when you include WINK

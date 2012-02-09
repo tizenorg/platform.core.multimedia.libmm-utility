@@ -26,68 +26,52 @@
 #include <glib.h>
 #include "mm_util_imgp.h"
 #ifdef __cplusplus
-        extern "C" {
+	extern "C" {
 #endif
 
 #include <gmodule.h>
 #include <mm_debug.h>
 
-#define PATH_NEON_LIB        		 				"/usr/lib/libmmutil_imgp_neon.so"
-#define PATH_GSTCS_LIB         				 		"/usr/lib/libmmutil_imgp_gstcs.so"
+#define PATH_NEON_LIB					"/usr/lib/libmmutil_imgp_neon.so"
+#define PATH_GSTCS_LIB					"/usr/lib/libmmutil_imgp_gstcs.so"
 
-#define IMGP_FUNC_NAME  				 		 "mm_imgp"
-#define buf_size 9
-
-/**
- * YUV format for jpeg
- */
-typedef enum
-{
-    /* YUV planar format */
-    MM_UTIL_JPEG_FMT_YUV420 = 0x00,  /**< YUV420 format - planer */
-    MM_UTIL_JPEG_FMT_YUV422,         /**< YUV422 format - planer */
-    /* YUV packed format */
-    MM_UTIL_JPEG_FMT_UYVY,            /**< UYVY format - YUV packed format */
-    /* RGB888 format */
-    MM_UTIL_JPEG_FMT_RGB888,	     /**< RGB888 format  */
-    /* GrayScale format */
-    MM_UTIL_JPEG_FMT_GraySacle,    /**< GrayScale format */
-} mm_util_jpeg_yuv_format;
+#define IMGP_FUNC_NAME  				"mm_imgp"
+#define IMAGE_FORMAT_LABEL_BUFFER_SIZE 9
 
 /**
- * Image Process Info for dlopen 
+ * Image Process Info for dlopen
  */
-typedef struct _imgp_info
+typedef struct _imgp_info_s
 {
 	unsigned char *src;
-	char   input_format_label[buf_size];
+	char   input_format_label[IMAGE_FORMAT_LABEL_BUFFER_SIZE];
 	mm_util_img_format src_format;
 	unsigned int src_width;
 	unsigned int src_height;
 	unsigned char *dst;
-	char  output_format_label[buf_size];
+	char  output_format_label[IMAGE_FORMAT_LABEL_BUFFER_SIZE];
 	mm_util_img_format dst_format;
 	unsigned int dst_width;
 	unsigned int dst_height;
 	unsigned int output_stride;
 	unsigned int output_elevation;
 	mm_util_img_rotate_type angle;
-} imgp_info;
+} imgp_info_s;
 
 /* Enumerations */
 typedef enum
 {
-        IMGP_CSC = 0,
+	IMGP_CSC = 0,
 	IMGP_RSZ,
 	IMGP_ROT,
-} imgp_type;
+} imgp_type_e;
 
 /* Enumerations */
 typedef enum
 {
-        IMGP_NEON = 0,
+	IMGP_NEON = 0,
 	IMGP_GSTCS,
-} imgp_plugin_type;
+} imgp_plugin_type_e;
 #ifdef __cplusplus
 }
 #endif

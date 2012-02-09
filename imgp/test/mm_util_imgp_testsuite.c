@@ -42,26 +42,24 @@ int main(int argc, char *argv[])
 		char output_file[25];
 		unsigned int src_size = 0;
 		unsigned int dst_size = 0;
-		if (argc < 5)
-		{
-		    mmf_debug(MMF_DEBUG_ERROR, "[%s][%05d] Usage: ./mm_image_testsuite filename [yuv420 | yuv420p | yuv422 | uyvy | vyuy | nv12 | nv12t | rgb565 | rgb888 | argb | jpeg] width height\n", __func__, __LINE__);
-		    exit (0);
+		if (argc < 5) {
+			mmf_debug(MMF_DEBUG_ERROR, "[%s][%05d] Usage: ./mm_image_testsuite filename [yuv420 | yuv420p | yuv422 | uyvy | vyuy | nv12 | nv12t | rgb565 | rgb888 | argb | jpeg] width height\n", __func__, __LINE__);
+			exit (0);
 		}
 
-		int src_cs =atoi(argv[4]); // MM_UTIL_IMG_FMT_YUYV;
+		int src_cs =atoi(argv[4]);
 		#if _CONVERT_
-		int dst_cs = atoi(argv[5]); // MM_UTIL_IMG_FMT_NV12_TILED;
+		int dst_cs = atoi(argv[5]);
 		#endif
 		#if _ROTATE_
 		mm_util_img_rotate_type angle = MM_UTIL_ROTATE_270;
 		#endif
-		int ret = 0;	
+		int ret = 0;
 		int cnt = 0;
 
 		MMTA_INIT();
-		#if ONE_ALL		
-		while(cnt++ < 10000) 
-		{
+		#if ONE_ALL
+		while(cnt++ < 10000) {
 		#endif
 		FILE *fp = fopen(argv[1], "r");
 
@@ -80,7 +78,7 @@ int main(int argc, char *argv[])
 		mm_util_get_image_size(src_cs, dst_width, dst_height, &dst_size);
 		dst = malloc(dst_size);
 		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] dst: %p", __func__, __LINE__, dst);
-		
+
 		__ta__("mm_util_rotate_image",
 		ret = mm_util_rotate_image(src, src_width, src_height, src_cs, dst, &dst_width, &dst_height, angle);
 		);
@@ -91,8 +89,7 @@ int main(int argc, char *argv[])
 		#endif
 #endif
 #if _RESIZE_
-		/*revised by yh8004.kim to check savs colorspace time*/
-		//scale 1/2 
+		//scale 1/2
 
 		#if _ROTATE_
 		src_width = dst_width; 
@@ -103,7 +100,7 @@ int main(int argc, char *argv[])
 		mm_util_get_image_size(src_cs, dst_width, dst_height, &dst_size);
 		dst = malloc(dst_size);
 		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] dst: %p", __func__, __LINE__, dst);
-				
+
 		__ta__("mm_util_resize_image",
 		ret = mm_util_resize_image(src, src_width, src_height, src_cs, dst, &dst_width, &dst_height);
 		);
@@ -112,11 +109,7 @@ int main(int argc, char *argv[])
 		#if _CONVERT_ && !_ROTATE_
 		src = dst;
 		#endif
-		#if 0
-		//cs convert
-		src_width = dst_width ;  	
-		src_height = dst_height; 
-		#endif
+
 #endif
 #if _CONVERT_
 		#if !(_ROTATE_ && _RESIZE_)
@@ -127,19 +120,17 @@ int main(int argc, char *argv[])
 		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] convert dst buffer size=%d\n", __func__, __LINE__, dst_size);
 		dst = malloc(dst_size);
 		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] dst: %p", __func__, __LINE__, dst);
-		
+
 		__ta__("mm_util_convert_colorspace",
 		ret = mm_util_convert_colorspace(src, src_width, src_height, src_cs, dst, dst_cs);
-		);		
+		);
 		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] mm_util_convert_colorspace dst:%p ret = %d",__func__, __LINE__, dst, ret);
 		MMTA_ACUM_ITEM_END("colorspace", 0);
 		MMTA_ACUM_ITEM_SHOW_RESULT();
 		MMTA_RELEASE ();
 #endif		
-		if(ret==0)
-		{
-			if(cnt == 0)
-			{
+		if(ret==0) {
+			if(cnt == 0) {
 				sprintf(output_file, "result%d.rgb", cnt);
 				FILE *fpout = fopen(output_file, "w");
 				mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] %s = %dx%d dst_size: %d", __func__, __LINE__, output_file, src_width, src_height, dst_size);
@@ -149,11 +140,17 @@ int main(int argc, char *argv[])
 				if(fpout) fclose(fpout);
 			}
 		}
-		if(fp) fclose(fp);
+		if(fp) {
+			fclose(fp);
+		}
 		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] src: %p",__func__, __LINE__, src);
-		if(src) {  free(src); src = NULL;}
+		if(src) {
+			free(src); src = NULL;
+		}
 		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] dst: %p",__func__, __LINE__,dst);
-		if(dst) { free(dst); dst = NULL;}
+		if(dst) {
+			free(dst); dst = NULL;
+		}
 		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] Success -  free src & dst",__func__, __LINE__);
 
 		#if ONE_ALL

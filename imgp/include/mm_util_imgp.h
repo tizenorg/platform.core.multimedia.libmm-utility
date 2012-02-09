@@ -39,28 +39,27 @@ extern "C" {
  */
 typedef enum
 {
-    /* YUV planar format */
-    MM_UTIL_IMG_FMT_YUV420 = 0x00,  /**< YUV420 format - planer */
-    MM_UTIL_IMG_FMT_YUV422,         /**< YUV422 format - planer */
-    MM_UTIL_IMG_FMT_I420,           /**< YUV420 format - planar */
-    MM_UTIL_IMG_FMT_NV12,           /**< NV12 format - planer */
+	/* YUV planar format */
+	MM_UTIL_IMG_FMT_YUV420 = 0x00,  /**< YUV420 format - planer */
+	MM_UTIL_IMG_FMT_YUV422,         /**< YUV422 format - planer */
+	MM_UTIL_IMG_FMT_I420,           /**< YUV420 format - planar */
+	MM_UTIL_IMG_FMT_NV12,           /**< NV12 format - planer */
 
-    /* YUV packed format */
-    MM_UTIL_IMG_FMT_UYVY,           /**< UYVY format - YUV packed format */
-    MM_UTIL_IMG_FMT_YUYV,           /**< YUYV format - YUV packed format */
+	/* YUV packed format */
+	MM_UTIL_IMG_FMT_UYVY,           /**< UYVY format - YUV packed format */
+	MM_UTIL_IMG_FMT_YUYV,           /**< YUYV format - YUV packed format */
 
-    /* RGB color */
-    MM_UTIL_IMG_FMT_RGB565,         /**< RGB565 pixel format */
-    MM_UTIL_IMG_FMT_RGB888,         /**< RGB888 pixel format */
-    MM_UTIL_IMG_FMT_ARGB8888,       /**< ARGB8888 pixel format */
+	/* RGB color */
+	MM_UTIL_IMG_FMT_RGB565,         /**< RGB565 pixel format */
+	MM_UTIL_IMG_FMT_RGB888,         /**< RGB888 pixel format */
+	MM_UTIL_IMG_FMT_ARGB8888,       /**< ARGB8888 pixel format */
 
-    //added by yh8004.kim
-    MM_UTIL_IMG_FMT_BGRA8888,      /**< BGRA8888 pixel format */
-    MM_UTIL_IMG_FMT_RGBA8888,      /**< RGBA8888 pixel format */      
-    MM_UTIL_IMG_FMT_BGRX8888,      /**<BGRX8888 pixel format */      
-    /* non-standard format */
-    MM_UTIL_IMG_FMT_NV12_TILED,     /**< Customized color format in s5pc110 */
-    MM_UTIL_IMG_FMT_NUM,            /**< Number of image formats */
+	MM_UTIL_IMG_FMT_BGRA8888,      /**< BGRA8888 pixel format */
+	MM_UTIL_IMG_FMT_RGBA8888,      /**< RGBA8888 pixel format */
+	MM_UTIL_IMG_FMT_BGRX8888,      /**<BGRX8888 pixel format */
+	/* non-standard format */
+	MM_UTIL_IMG_FMT_NV12_TILED,     /**< Customized color format in s5pc110 */
+	MM_UTIL_IMG_FMT_NUM,            /**< Number of image formats */
 } mm_util_img_format;
 
 
@@ -69,13 +68,13 @@ typedef enum
  */
 typedef enum
 {
-    MM_UTIL_ROTATE_0,               /**< Rotation 0 degree - no effect */
-    MM_UTIL_ROTATE_90,              /**< Rotation 90 degree */
-    MM_UTIL_ROTATE_180,             /**< Rotation 180 degree */
-    MM_UTIL_ROTATE_270,             /**< Rotation 270 degree */
-    MM_UTIL_ROTATE_FLIP_HORZ,       /**< Flip horizontal */
-    MM_UTIL_ROTATE_FLIP_VERT,       /**< Flip vertial */
-    MM_UTIL_ROTATE_NUM              /**< Number of rotation types */     
+	MM_UTIL_ROTATE_0,               /**< Rotation 0 degree - no effect */
+	MM_UTIL_ROTATE_90,              /**< Rotation 90 degree */
+	MM_UTIL_ROTATE_180,             /**< Rotation 180 degree */
+	MM_UTIL_ROTATE_270,             /**< Rotation 270 degree */
+	MM_UTIL_ROTATE_FLIP_HORZ,       /**< Flip horizontal */
+	MM_UTIL_ROTATE_FLIP_VERT,       /**< Flip vertial */
+	MM_UTIL_ROTATE_NUM              /**< Number of rotation types */
 } mm_util_img_rotate_type;
 
 /**

@@ -39,27 +39,27 @@ extern "C" {
  */
 typedef enum
 {
-    /* YUV planar format */
-    MM_UTIL_JPEG_FMT_YUV420 = 0x00,  /**< YUV420 format - planer */
-    MM_UTIL_JPEG_FMT_YUV422,         /**< YUV422 format - planer */
-    /* YUV packed format */
-    MM_UTIL_JPEG_FMT_UYVY,            /**< UYVY format - YUV packed format */
-    /* RGB888 format */
-    MM_UTIL_JPEG_FMT_RGB888,	     /**< RGB888 format  */
-    /* GrayScale format */
-    MM_UTIL_JPEG_FMT_GraySacle,    /**< GrayScale format */
+	/* YUV planar format */
+	MM_UTIL_JPEG_FMT_YUV420 = 0x00,  /**< YUV420 format - planer */
+	MM_UTIL_JPEG_FMT_YUV422,         /**< YUV422 format - planer */
+	/* YUV packed format */
+	MM_UTIL_JPEG_FMT_UYVY,            /**< UYVY format - YUV packed format */
+	/* RGB888 format */
+	MM_UTIL_JPEG_FMT_RGB888,	     /**< RGB888 format  */
+	/* GrayScale format */
+	MM_UTIL_JPEG_FMT_GraySacle,    /**< GrayScale format */
 } mm_util_jpeg_yuv_format;
 
 /**
  * YUV data
  */
-typedef struct 
+typedef struct
 {
-    mm_util_jpeg_yuv_format format;     /**< pixel format*/
-    int width;                          /**< width */
-    int height;                         /**< heigt */
-    int size;                           /**< size */
-    void *data;                         /**< data */ //    int decode_yuv_subsample;                    /**< decode_yuv_subsample */
+	mm_util_jpeg_yuv_format format;     /**< pixel format*/
+	int width;                          /**< width */
+	int height;                         /**< heigt */
+	int size;                           /**< size */
+	void *data;                         /**< data */ //    int decode_yuv_subsample;                    /**< decode_yuv_subsample */
 } mm_util_jpeg_yuv_data;
 
 

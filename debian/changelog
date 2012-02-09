@@ -1,24 +1,7 @@
-libmm-utility (0.1-51) unstable; urgency=low
+libmm-utility (0.1-54) unstable; urgency=low
 
-  * Correct jpeg decode API
+  * Revise the code of libjpeg-turbo
   * Git: pkgs/l/libmm-utility
-  * Tag: libmm-utility_0.1-51
+  * Tag: libmm-utility_0.1-54
 
- -- YoungHun Kim <yh8004.kim@samsung.com>  Tue, 03 Jan 2012 15:12:37 +0900
-
-libmm-utility (0.1-50) unstable; urgency=low
-
-  * Update decode from memory
-  * Git: pkgs/l/libmm-utility
-  * Tag: libmm-utility_0.1-50
-
- -- YoungHun Kim <yh8004.kim@samsung.com>  Mon, 26 Dec 2011 12:41:14 +0900
-
-libmm-utility (0.1-49) unstable; urgency=low
-
-  * Git Init
-  * Git: pkgs/l/libmm-utility
-  * Tag: libmm-utility_0.1-49
- 
- -- YoungHun Kim <yh8004.kim@samsung.com>  Wen, 06 Dec 2011 20:25:41 +0900
-
+ -- YoungHun Kim <yh8004.kim@samsung.com>  Fri, 27 Jan 2012 11:25:23 +0900
