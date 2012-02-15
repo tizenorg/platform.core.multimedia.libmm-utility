@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 		int dst_cs = atoi(argv[5]);
 		#endif
 		#if _ROTATE_
-		mm_util_img_rotate_type angle = MM_UTIL_ROTATE_270;
+		mm_util_img_rotate_type angle = MM_UTIL_ROTATE_FLIP_HORZ;
 		#endif
 		int ret = 0;
 		int cnt = 0;
@@ -72,9 +72,8 @@ int main(int argc, char *argv[])
 		fread(src, 1, src_size, fp);
 
 #if _ROTATE_
-		//rotate 90
 		dst_width = src_width ;
-		dst_height = src_width;
+		dst_height = src_height;
 		mm_util_get_image_size(src_cs, dst_width, dst_height, &dst_size);
 		dst = malloc(dst_size);
 		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] dst: %p", __func__, __LINE__, dst);

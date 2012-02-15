@@ -261,7 +261,7 @@ _mm_check_rotate_format(mm_util_img_format _format)
 	gboolean _bool = FALSE;
 		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] _format: %d", __func__, __LINE__, _format);
 	if( (_format == MM_UTIL_IMG_FMT_YUV420) || (_format == MM_UTIL_IMG_FMT_I420)
-	|| (_format == MM_UTIL_IMG_FMT_NV12) || (_format == MM_UTIL_IMG_FMT_RGB888) ) {
+	|| (_format == MM_UTIL_IMG_FMT_NV12) || (_format == MM_UTIL_IMG_FMT_RGB565) || (_format == MM_UTIL_IMG_FMT_RGB888)) {
 		_bool = TRUE;
 	}
 

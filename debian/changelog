@@ -1,3 +1,11 @@
+libmm-utility (0.1-55) unstable; urgency=low
+
+  * Update rotate image format
+  * Git: pkgs/l/libmm-utility
+  * Tag: libmm-utility_0.1-55
+
+ -- YoungHun Kim <yh8004.kim@samsung.com>  Tue, 14 Feb 2012 20:46:24 +0900
+
 libmm-utility (0.1-54) unstable; urgency=low
 
   * Revise the code of libjpeg-turbo
