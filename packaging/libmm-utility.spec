@@ -3,11 +3,11 @@ Summary:    Multimedia Framework Utility Library
 Version:    0.1
 Release:    40
 Group:      System/Libraries
-License:    TBD
-Source0:    %{name}-%{version}.tar.bz2
+License:    Apache-2.0
+Source0:    %{name}-%{version}.tar.gz
 Requires(post):  /sbin/ldconfig
 Requires(postun):  /sbin/ldconfig
-BuildRequires:  pkgconfig(mm-common)
+BuildRequires:  pkgconfig(mm-common), libmm-common-internal-devel
 BuildRequires:  pkgconfig(mm-log)
 BuildRequires:  pkgconfig(mm-ta)
 BuildRequires:  pkgconfig(glib-2.0)
@@ -44,7 +44,6 @@ sed -i -e "s#@IMGP_REQPKG@#$IMGP_REQPKG#g" imgp/mmutil-imgp.pc
 sed -i -e "s#@JPEG_REQPKG@#$JPEG_REQPKG#g" jpeg/mmutil-jpeg.pc
 
 %install
-rm -rf %{buildroot}
 %make_install
 
 %clean
