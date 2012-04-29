@@ -204,7 +204,7 @@ _mm_cannot_convert_format(mm_util_img_format src_format, mm_util_img_format dst_
 }
 
 static gboolean
-_mm_check_convert_format(mm_util_img_format src_format, mm_util_img_format dst_format )
+_mm_select_convert_plugin(mm_util_img_format src_format, mm_util_img_format dst_format )
 {
 	gboolean _bool=FALSE;
 	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d]  src_format: %d,  dst_format:%d", __func__, __LINE__, src_format, dst_format);
@@ -243,7 +243,7 @@ _mm_check_convert_format(mm_util_img_format src_format, mm_util_img_format dst_f
 }
 
 static gboolean
-_mm_check_resize_format(mm_util_img_format _format)
+_mm_select_resize_plugin(mm_util_img_format _format)
 {
 	gboolean _bool = FALSE;
 	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d]  _format: %d", __func__, __LINE__, _format);
@@ -256,16 +256,75 @@ _mm_check_resize_format(mm_util_img_format _format)
 }
 
 static gboolean
-_mm_check_rotate_format(mm_util_img_format _format)
+_mm_select_rotate_plugin(mm_util_img_format _format, unsigned int width, unsigned int height, mm_util_img_rotate_type angle)
 {
 	gboolean _bool = FALSE;
-		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] _format: %d", __func__, __LINE__, _format);
-	if( (_format == MM_UTIL_IMG_FMT_YUV420) || (_format == MM_UTIL_IMG_FMT_I420)
-	|| (_format == MM_UTIL_IMG_FMT_NV12) || (_format == MM_UTIL_IMG_FMT_RGB565) || (_format == MM_UTIL_IMG_FMT_RGB888)) {
+	gboolean _rgb_Flag = FALSE;
+	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] _format: %d", __func__, __LINE__, _format);
+
+	if( _format == MM_UTIL_IMG_FMT_RGB888 ||_format == MM_UTIL_IMG_FMT_RGB565) {
+		unsigned int imgsize = 0;
+		unsigned int rotate_imgsize = 0;
+		mm_util_get_image_size(_format, width, height, &imgsize);
+		mm_util_get_image_size(_format, height, width, &rotate_imgsize);
+
+		if( (imgsize == rotate_imgsize) ||((imgsize != rotate_imgsize) && angle == MM_UTIL_ROTATE_90) ) { //constraint of image processing because MM_UTIL_ROTATE_180 may be twice MM_UTIL_ROTATE_90
+			_rgb_Flag = TRUE;
+		}
+	}
+
+	if( (_format == MM_UTIL_IMG_FMT_YUV420) || (_format == MM_UTIL_IMG_FMT_I420) || (_format == MM_UTIL_IMG_FMT_NV12) ||(_rgb_Flag) ) {
 		_bool = TRUE;
 	}
 
 		return _bool;
+}
+
+static int
+_mm_confirm_dst_width_height(unsigned int src_width, unsigned int src_height, unsigned int *dst_width, unsigned int *dst_height, mm_util_img_rotate_type angle)
+{
+	int ret = MM_ERROR_NONE;
+
+	if(!dst_width || !dst_height) {
+		mmf_debug (MMF_DEBUG_ERROR, "[%s][%05d] dst_width || dst_height Buffer is NULL", __func__, __LINE__);
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
+
+	switch(angle) {
+		case MM_UTIL_ROTATE_0:
+		case MM_UTIL_ROTATE_180:
+		case MM_UTIL_ROTATE_FLIP_HORZ:
+		case MM_UTIL_ROTATE_FLIP_VERT:
+			if(*dst_width != src_width) {
+				mmf_debug (MMF_DEBUG_LOG, "[%s][%05d] *dst_width: %d", __func__, __LINE__, *dst_width);
+				*dst_width = src_width;
+				mmf_debug (MMF_DEBUG_LOG, "[%s][%05d] #Confirmed# *dst_width: %d", __func__, __LINE__, *dst_width);
+			}
+			if(*dst_height != src_height) {
+				mmf_debug (MMF_DEBUG_LOG, "[%s][%05d] *dst_height: %d", __func__, __LINE__, *dst_height);
+				*dst_height = src_height;
+				mmf_debug (MMF_DEBUG_LOG, "[%s][%05d] #Confirmed# *dst_height: %d", __func__, __LINE__, *dst_height);
+			}
+			break;
+		case MM_UTIL_ROTATE_90:
+		case MM_UTIL_ROTATE_270:
+			if(*dst_width != src_height) {
+				mmf_debug (MMF_DEBUG_LOG, "[%s][%05d] *dst_width: %d", __func__, __LINE__, *dst_width);
+				*dst_width = src_height;
+				mmf_debug (MMF_DEBUG_LOG, "[%s][%05d] #Confirmed# *dst_width: %d", __func__, __LINE__, *dst_width);
+			}
+			if(*dst_height != src_width) {
+				mmf_debug (MMF_DEBUG_LOG, "[%s][%05d] *dst_height: %d", __func__, __LINE__, *dst_height);
+				*dst_height = src_width;
+				mmf_debug (MMF_DEBUG_LOG, "[%s][%05d] #Confirmed# *dst_height: %d", __func__, __LINE__, *dst_height);
+			}
+			break;
+
+		default:
+			mmf_debug (MMF_DEBUG_ERROR, "[%s][%05d] Not supported rotate value\n", __func__, __LINE__);
+			return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
+	return ret;
 }
 
 static int
@@ -338,7 +397,7 @@ _mm_set_imgp_info_s(imgp_info_s * _imgp_info_s, unsigned char *src,  mm_util_img
 		mmf_debug(MMF_DEBUG_ERROR, "[%s][%05d] src image size error", __func__, __LINE__);
 	}
 	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] src_size: %d\n", __func__, __LINE__, src_size);
-	_imgp_info_s->src=(char*)malloc(sizeof(char*) * src_size);
+	_imgp_info_s->src=(unsigned char*)malloc(sizeof(char*) * src_size);
 	if(_imgp_info_s->src == NULL) {
 		mmf_debug(MMF_DEBUG_ERROR, "[%s][%05d] _imgp_info_s->src is NULL", __func__, __LINE__);
 		free(_imgp_info_s->src);
@@ -357,7 +416,7 @@ _mm_set_imgp_info_s(imgp_info_s * _imgp_info_s, unsigned char *src,  mm_util_img
 		mmf_debug(MMF_DEBUG_ERROR, "[%s][%05d] dst image size error", __func__, __LINE__);
 	}
 	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] dst_size: %d\n", __func__, __LINE__, dst_size);
-	_imgp_info_s->dst=(char*)malloc(sizeof(char*) * dst_size);
+	_imgp_info_s->dst=(unsigned char*)malloc(sizeof(char*) * dst_size);
 	if(_imgp_info_s->dst == NULL) {
 		mmf_debug(MMF_DEBUG_ERROR, "[%s][%05d] _imgp_info_s->src is NULL", __func__, __LINE__);
 		free(_imgp_info_s->dst);
@@ -365,8 +424,8 @@ _mm_set_imgp_info_s(imgp_info_s * _imgp_info_s, unsigned char *src,  mm_util_img
 		return MM_ERROR_IMAGE_FILEOPEN;
 	}
 	_imgp_info_s->dst_format=dst_format;
-	_imgp_info_s->dst_width =  dst_width;
-	_imgp_info_s->dst_height =  dst_height;
+	_imgp_info_s->dst_width = dst_width;
+	_imgp_info_s->dst_height = dst_height;
 	_imgp_info_s->angle= angle;
 
 	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] [input] format label : %s  src: %p width: %d  height: %d [output] format label: %s width: %d height: %d rotation_value: %d",
@@ -426,7 +485,7 @@ _mm_util_imgp_finalize(GModule *module, imgp_info_s *_imgp_info_s)
 		module = NULL;
 	}else {
 		mmf_debug(MMF_DEBUG_ERROR,  "[%s][%05d] #module is NULL#", __func__, __LINE__ );
-		return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+		return MM_ERROR_IMAGE_INVALID_VALUE;
 	}
 
 	if(_imgp_info_s) {
@@ -438,13 +497,11 @@ _mm_util_imgp_finalize(GModule *module, imgp_info_s *_imgp_info_s)
 			free(_imgp_info_s->dst);_imgp_info_s->dst=NULL;
 		}
 		mmf_debug(MMF_DEBUG_LOG,  "[%s][%05d] #Success _imgp_info_s->dst#", __func__, __LINE__ );
-		if(_imgp_info_s) {
-			free(_imgp_info_s); _imgp_info_s=NULL;
-		}
+		free(_imgp_info_s); _imgp_info_s=NULL;
 		mmf_debug(MMF_DEBUG_LOG,  "[%s][%05d] #Success _imgp_info_s#", __func__, __LINE__ );
 	}else {
 		mmf_debug(MMF_DEBUG_ERROR,  "[%s][%05d] #_imgp_info_s is NULL#", __func__, __LINE__ );
-		return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+		return MM_ERROR_IMAGE_INVALID_VALUE;
 	}
 	return ret;
 }
@@ -483,7 +540,7 @@ mm_util_convert_colorspace(unsigned char *src, unsigned int src_width, unsigned 
 	imgp_plugin_type_e _imgp_plugin_type_e=-1;
 
 	/* Initialize */
-	if( _mm_check_convert_format(src_format, dst_format)) {
+	if( _mm_select_convert_plugin(src_format, dst_format)) {
 		_imgp_plugin_type_e = IMGP_NEON;
 	}else {
 		_imgp_plugin_type_e = IMGP_GSTCS;
@@ -521,6 +578,9 @@ mm_util_convert_colorspace(unsigned char *src, unsigned int src_width, unsigned 
 
 	/* Output result*/
 	mm_util_get_image_size(_imgp_info_s->dst_format, _imgp_info_s->dst_width, _imgp_info_s->dst_height, &dst_size);
+	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] dst_width: %d, dst_height: %d, output_stride: %d, output_elevation: %d",
+			__func__, __LINE__, _imgp_info_s->dst_width, _imgp_info_s->dst_height, _imgp_info_s->output_stride, _imgp_info_s->output_elevation);
+
 	memcpy(dst, _imgp_info_s->dst, dst_size);
 
 	/* Finalize */
@@ -563,7 +623,7 @@ mm_util_resize_image(unsigned char *src, unsigned int src_width, unsigned int sr
 	imgp_plugin_type_e _imgp_plugin_type_e=-1;
 
 	/* Initialize */
-	if( _mm_check_resize_format(src_format)) {
+	if( _mm_select_resize_plugin(src_format)) {
 		_imgp_plugin_type_e = IMGP_NEON;
 	}else {
 		_imgp_plugin_type_e = IMGP_GSTCS;
@@ -603,7 +663,14 @@ mm_util_resize_image(unsigned char *src, unsigned int src_width, unsigned int sr
 
 	/* Output result*/
 	mm_util_get_image_size(_imgp_info_s->dst_format, _imgp_info_s->dst_width, _imgp_info_s->dst_height, &dst_size);
+	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] dst_width: %d, dst_height: %d, output_stride: %d, output_elevation: %d",
+			__func__, __LINE__, _imgp_info_s->dst_width, _imgp_info_s->dst_height, _imgp_info_s->output_stride, _imgp_info_s->output_elevation);
+
 	memcpy(dst, _imgp_info_s->dst, dst_size);
+	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] #Success# memcpy");
+
+	*dst_width = _imgp_info_s->dst_width;
+	*dst_height = _imgp_info_s->dst_height;
 
 	/* Finalize */
 	ret = _mm_util_imgp_finalize(_module, _imgp_info_s);
@@ -652,7 +719,7 @@ mm_util_rotate_image(unsigned char *src, unsigned int src_width, unsigned int sr
 	imgp_plugin_type_e _imgp_plugin_type_e=-1;
 
 	/* Initialize */
-	if( _mm_check_rotate_format(src_format)) {
+	if( _mm_select_rotate_plugin(src_format, src_width, src_height, angle)) {
 		_imgp_plugin_type_e = IMGP_NEON;
 	}else {
 		_imgp_plugin_type_e = IMGP_GSTCS;
@@ -665,6 +732,12 @@ mm_util_rotate_image(unsigned char *src, unsigned int src_width, unsigned int sr
 		_module  = _mm_util_imgp_initialize(_imgp_plugin_type_e);
 	}
 	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] _mm_set_imgp_info_s", __func__, __LINE__);
+	ret=_mm_confirm_dst_width_height(src_width, src_height, dst_width, dst_height, angle);
+	if(ret != MM_ERROR_NONE) {
+		mmf_debug(MMF_DEBUG_ERROR, "[%s][%05d] dst_width || dest_height size Error", __func__, __LINE__);
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
+
 	ret=_mm_set_imgp_info_s(_imgp_info_s, src, src_format, src_width, src_height, src_format, *dst_width, *dst_height, angle);
 	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] _mm_set_imgp_info_s", __func__, __LINE__);
 	if(ret != MM_ERROR_NONE) {
@@ -683,13 +756,19 @@ mm_util_rotate_image(unsigned char *src, unsigned int src_width, unsigned int sr
 			return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
 		}
 	}else {
-		mmf_debug(MMF_DEBUG_ERROR, "[%s][%05d] g_module_symbol failed", __func__, __LINE__); 
+		mmf_debug(MMF_DEBUG_ERROR, "[%s][%05d] g_module_symbol failed", __func__, __LINE__);
 		return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
 	}
 
 	/* Output result*/
 	mm_util_get_image_size(_imgp_info_s->dst_format, _imgp_info_s->dst_width, _imgp_info_s->dst_height, &dst_size);
+	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] dst_width: %d, dst_height: %d, output_stride: %d, output_elevation: %d, dst_size: %d",
+			__func__, __LINE__, _imgp_info_s->dst_width, _imgp_info_s->dst_height, _imgp_info_s->output_stride, _imgp_info_s->output_elevation,dst_size);
+
 	memcpy(dst, _imgp_info_s->dst, dst_size);
+	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] #Success# memcpy");
+	*dst_width = _imgp_info_s->dst_width;
+	*dst_height = _imgp_info_s->dst_height;
 
 	/* Finalize */
 	ret = _mm_util_imgp_finalize(_module, _imgp_info_s);
@@ -753,7 +832,7 @@ mm_util_get_image_size(mm_util_img_format format, unsigned int width, unsigned i
 			break;
 
 		case MM_UTIL_IMG_FMT_RGB888:
-			stride = width * 3;
+			stride = MM_UTIL_ROUND_UP_4 (width * 3);
 			size = stride * height;
 			*imgsize = size;
 			break;
@@ -786,6 +865,7 @@ mm_util_get_image_size(mm_util_img_format format, unsigned int width, unsigned i
 			mmf_debug (MMF_DEBUG_ERROR, "[%s][%05d] Not supported format\n", __func__, __LINE__);
 			return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
 	}
+	mmf_debug (MMF_DEBUG_LOG, "[%s][%05d] format: %d, *imgsize: %d\n", __func__, __LINE__, format, *imgsize);
 
 	return ret;
 }

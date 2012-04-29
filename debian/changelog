@@ -1,3 +1,11 @@
+libmm-utility (0.1-56) unstable; urgency=low
+
+  * Update the exceptional image rotate
+  * Git: pkgs/l/libmm-utility
+  * Tag: libmm-utility_0.1-56
+
+ -- YoungHun Kim <yh8004.kim@samsung.com>  Fri, 02 Mar 2012 11:46:50 +0900
+
 libmm-utility (0.1-55) unstable; urgency=low
 
   * Update rotate image format
