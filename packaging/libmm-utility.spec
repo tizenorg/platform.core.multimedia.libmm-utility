@@ -5,6 +5,7 @@ Release:    40
 Group:      System/Libraries
 License:    Apache-2.0
 Source0:    %{name}-%{version}.tar.gz
+Source1001: packaging/libmm-utility.manifest 
 Requires(post):  /sbin/ldconfig
 Requires(postun):  /sbin/ldconfig
 BuildRequires:  pkgconfig(mm-common)
@@ -38,6 +39,7 @@ LDFLAGS+="-Wl,--rpath=%{_prefix}/lib -Wl,--hash-style=both -Wl,--as-needed" \
 ./configure --prefix=%{_prefix}
 
 %build
+cp %{SOURCE1001} .
 make %{?jobs:-j%jobs}
 
 sed -i -e "s#@IMGP_REQPKG@#$IMGP_REQPKG#g" imgp/mmutil-imgp.pc
@@ -55,11 +57,13 @@ rm -rf %{buildroot}
 
 
 %files
+%manifest libmm-utility.manifest
 %defattr(-,root,root,-)
 %{_libdir}/*.so*
 %exclude %{_bindir}/*_testsuite
 
 %files devel
+%manifest libmm-utility.manifest
 %defattr(-,root,root,-)
 %{_includedir}/*
 %{_libdir}/pkgconfig/*
