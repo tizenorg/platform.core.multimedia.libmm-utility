@@ -32,12 +32,13 @@
 #define GEN_MASK(x) ((1<<(x))-1)
 #define ROUND_UP_X(v,x) (((v) + GEN_MASK(x)) & ~GEN_MASK(x))
 #define DIV_ROUND_UP_X(v,x) (((v) + GEN_MASK(x)) >> (x))
+#define GST "gstcs"
 
 typedef gboolean(*IMGPInfoFunc)  (imgp_info_s*, imgp_plugin_type_e);
 /*########################################################################################*/
 #define setup_image_size_I420(width, height) { \
 	int size=0; \
-	size = (MM_UTIL_ROUND_UP_4 (width) * MM_UTIL_ROUND_UP_2 (height) + MM_UTIL_ROUND_UP_8 (width) * MM_UTIL_ROUND_UP_2 (height) /2); \
+	size = (MM_UTIL_ROUND_UP_4 (width) * MM_UTIL_ROUND_UP_2 (height) + MM_UTIL_ROUND_UP_4 (width) * MM_UTIL_ROUND_UP_2 (height) /2); \
 	return size; \
 }
 
@@ -143,7 +144,7 @@ _mm_setup_image_size(const char* _format_label, int width, int height)
 	}else if(strcmp(_format_label, "Y444") == 0) {
 		setup_image_size_Y444(width, height); //width * height *3;
 	}else if(strcmp(_format_label, "YV12") == 0)	 {
-		setup_image_size_YV12(width, height); //width * height *1;
+		setup_image_size_YV12(width, height); //width * height *1.5; width must be 8 multiple
 	}else if(strcmp(_format_label, "NV12") == 0) {
 		setup_image_size_NV12(width, height) //width * height *1.5;
 	}else if(strcmp(_format_label, "ST12") == 0) {
@@ -200,6 +201,39 @@ _mm_cannot_convert_format(mm_util_img_format src_format, mm_util_img_format dst_
 		_bool = TRUE;
 	}
 
+	return _bool;
+}
+
+static gboolean
+_mm_gst_can_resize_format(char* __format_label)
+{
+	gboolean _bool = FALSE;
+	mmf_debug(MMF_DEBUG_LOG,"[%s][%05d] Format label: %s", __func__, __LINE__,__format_label);
+	if(strcmp(__format_label, "AYUV") == 0
+		|| strcmp(__format_label, "UYVY") == 0 ||strcmp(__format_label, "Y800") == 0 || strcmp(__format_label, "I420") == 0  || strcmp(__format_label, "YV12") == 0
+		|| strcmp(__format_label, "RGB888") == 0  || strcmp(__format_label, "RGB565") == 0 || strcmp(__format_label, "BGR888") == 0  || strcmp(__format_label, "RGBA8888") == 0
+		|| strcmp(__format_label, "ARGB8888") == 0 ||strcmp(__format_label, "BGRA8888") == 0 ||strcmp(__format_label, "ABGR8888") == 0 ||strcmp(__format_label, "RGBX") == 0
+		||strcmp(__format_label, "XRGB") == 0 ||strcmp(__format_label, "BGRX") == 0 ||strcmp(__format_label, "XBGR") == 0 ||strcmp(__format_label, "Y444") == 0
+		||strcmp(__format_label, "Y42B") == 0 ||strcmp(__format_label, "YUY2") == 0 ||strcmp(__format_label, "YUYV") == 0 ||strcmp(__format_label, "UYVY") == 0
+		||strcmp(__format_label, "Y41B") == 0 ||strcmp(__format_label, "Y16") == 0 ||strcmp(__format_label, "Y800") == 0 ||strcmp(__format_label, "Y8") == 0
+		||strcmp(__format_label, "GREY") == 0 ||strcmp(__format_label, "AY64") == 0 || strcmp(__format_label, "YUV422") == 0) {
+
+		_bool=TRUE;
+	}
+	return _bool;
+}
+
+static gboolean
+_mm_gst_can_rotate_format(const char* __format_label)
+{
+	gboolean _bool = FALSE;
+	mmf_debug(MMF_DEBUG_LOG,"[%s][%05d] Format label: %s boolean: %d", __func__, __LINE__,__format_label, _bool);
+	if(strcmp(__format_label, "I420") == 0 ||strcmp(__format_label, "YV12") == 0 || strcmp(__format_label, "IYUV") == 0
+		|| strcmp(__format_label, "RGB888") == 0||strcmp(__format_label, "BGR888") == 0 ||strcmp(__format_label, "RGBA8888") == 0
+		|| strcmp(__format_label, "ARGB8888") == 0 ||strcmp(__format_label, "BGRA8888") == 0 ||strcmp(__format_label, "ABGR8888") == 0 ) {
+		_bool=TRUE;
+	}
+	mmf_debug(MMF_DEBUG_LOG,"[%s][%05d] boolean: %d", __func__, __LINE__,_bool);
 	return _bool;
 }
 
@@ -337,7 +371,7 @@ _mm_set_format_label(char* format_label, mm_util_img_format _format)
 	}
 
 	if(_format == MM_UTIL_IMG_FMT_YUV420) {
-		strncpy(format_label, "I420", IMAGE_FORMAT_LABEL_BUFFER_SIZE);
+		strncpy(format_label, "YV12", IMAGE_FORMAT_LABEL_BUFFER_SIZE);
 	}else if(_format == MM_UTIL_IMG_FMT_YUV422) {
 		strncpy(format_label, "Y42B", IMAGE_FORMAT_LABEL_BUFFER_SIZE);
 	}else if(_format == MM_UTIL_IMG_FMT_I420) {
@@ -451,7 +485,7 @@ _mm_util_imgp_initialize(imgp_plugin_type_e _imgp_plugin_type_e)
 		mmf_debug(MMF_DEBUG_ERROR, "[%s][%05d] %s | %s module open failed", __func__, __LINE__, PATH_NEON_LIB, PATH_GSTCS_LIB);
 		return NULL;
 	}
-	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] module: %p,  g_module_name: %s", __func__, __LINE__, module,  g_module_name (module));
+	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] module: %p,  g_module_name: %s", __func__, __LINE__, module, g_module_name (module));
 	return module;
 }
 
@@ -506,6 +540,108 @@ _mm_util_imgp_finalize(GModule *module, imgp_info_s *_imgp_info_s)
 	return ret;
 }
 
+static int
+_mm_util_crop_rgba32(unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
+unsigned int crop_start_x, unsigned int crop_start_y, unsigned int crop_dest_width, unsigned int crop_dest_height, unsigned char *dst)
+{
+	int ret = MM_ERROR_NONE;
+	int i;
+	int start_x = (src_width - crop_dest_width) / 2;
+	int start_y = (src_height - crop_dest_height) / 2;
+	int src_bytesperline = src_width * 4;
+	int dst_bytesperline = crop_dest_width * 4;
+
+	src += start_y * src_bytesperline + 3 * start_x;
+
+	for (i = 0; i < crop_dest_height; i++) {
+		memcpy(dst, src, dst_bytesperline);
+		src += src_bytesperline;
+		dst += dst_bytesperline;
+	}
+
+	return ret;
+}
+
+static int
+_mm_util_crop_rgb888(unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
+unsigned int crop_start_x, unsigned int crop_start_y, unsigned int crop_dest_width, unsigned int crop_dest_height, unsigned char *dst)
+{
+	int ret = MM_ERROR_NONE;
+	int i;
+	int start_x = (src_width - crop_dest_width) / 2;
+	int start_y = (src_height - crop_dest_height) / 2;
+	int src_bytesperline = src_width * 3;
+	int dst_bytesperline = crop_dest_width * 3;
+
+	src += start_y * src_bytesperline + 3 * start_x;
+
+	for (i = 0; i < crop_dest_height; i++) {
+		memcpy(dst, src, dst_bytesperline);
+		src += src_bytesperline;
+		dst += dst_bytesperline;
+	}
+
+	return ret;
+}
+
+static int
+_mm_util_crop_rgb565(unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
+unsigned int crop_start_x, unsigned int crop_start_y, unsigned int crop_dest_width, unsigned int crop_dest_height, unsigned char *dst)
+{
+	int ret = MM_ERROR_NONE;
+	int i;
+	int start_x = (src_width - crop_dest_width) / 2;
+	int start_y = (src_height - crop_dest_height) / 2;
+	int src_bytesperline = src_width * 2;
+	int dst_bytesperline = crop_dest_width * 2;
+
+	src += start_y * src_bytesperline + 3 * start_x;
+
+	for (i = 0; i < crop_dest_height; i++) {
+		memcpy(dst, src, dst_bytesperline);
+		src += src_bytesperline;
+		dst += dst_bytesperline;
+	}
+
+	return ret;
+}
+
+static int
+_mm_util_crop_yuv420(unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
+unsigned int crop_start_x, unsigned int crop_start_y, unsigned int crop_dest_width, unsigned int crop_dest_height, unsigned char *dst)
+{
+	int ret = MM_ERROR_NONE;
+	int i;
+	int start_x = ((src_width - crop_dest_width) / 2) & ~1;
+	int start_y = ((src_height - crop_dest_height) / 2) & ~1;
+	unsigned char *_src = src + start_y * src_width + start_x;
+
+	/* Y */
+	for (i = 0; i < crop_dest_height; i++) {
+		memcpy(dst, _src, crop_dest_width);
+		_src += src_width;
+		dst += crop_dest_width;
+	}
+
+	/* U */
+	_src = src + src_height * src_width + (start_y / 2) * src_width / 2 + start_x / 2;
+	for (i = 0; i < crop_dest_height / 2; i++) {
+		memcpy(dst, _src, crop_dest_width / 2);
+		_src += src_width / 2;
+		dst += crop_dest_width / 2;
+	}
+
+	/* V */
+	_src = src + src_height * src_width * 5 / 4 + (start_y / 2) * src_width / 2 + start_x / 2;
+	for (i = 0; i < crop_dest_height / 2; i++) {
+		memcpy(dst, _src, crop_dest_width / 2);
+		_src += src_width / 2;
+		dst += crop_dest_width / 2;
+	}
+
+	return ret;
+}
+
 EXPORT_API int
 mm_util_convert_colorspace(unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format, unsigned char *dst, mm_util_img_format dst_format)
 {
@@ -535,7 +671,7 @@ mm_util_convert_colorspace(unsigned char *src, unsigned int src_width, unsigned 
 
 	imgp_info_s* _imgp_info_s=(imgp_info_s*)malloc(sizeof(imgp_info_s));
 	unsigned int dst_size=0;
-	IMGPInfoFunc  _mm_util_imgp_func  = NULL;
+	IMGPInfoFunc _mm_util_imgp_func  = NULL;
 	GModule *_module  = NULL;
 	imgp_plugin_type_e _imgp_plugin_type_e=-1;
 
@@ -550,7 +686,7 @@ mm_util_convert_colorspace(unsigned char *src, unsigned int src_width, unsigned 
 	if(_module == NULL) { //when IMGP_NEON is NULL
 		_imgp_plugin_type_e = IMGP_GSTCS;
 		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] You use %s module", __func__, __LINE__, PATH_GSTCS_LIB);
-		_module  = _mm_util_imgp_initialize(_imgp_plugin_type_e);
+		_module = _mm_util_imgp_initialize(_imgp_plugin_type_e);
 	}
 	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] _mm_util_imgp_func: %p", __func__, __LINE__, _module);
 	ret=_mm_set_imgp_info_s(_imgp_info_s, src, src_format, src_width, src_height, dst_format, src_width, src_height, MM_UTIL_ROTATE_0);
@@ -634,7 +770,7 @@ mm_util_resize_image(unsigned char *src, unsigned int src_width, unsigned int sr
 	{
 		_imgp_plugin_type_e = IMGP_GSTCS;
 		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] You use %s module", __func__, __LINE__, PATH_GSTCS_LIB);
-		_module  = _mm_util_imgp_initialize(_imgp_plugin_type_e);
+		_module = _mm_util_imgp_initialize(_imgp_plugin_type_e);
 	}
 	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] _mm_set_imgp_info_s", __func__, __LINE__);
 	ret=_mm_set_imgp_info_s(_imgp_info_s, src, src_format, src_width, src_height, src_format, *dst_width, *dst_height, MM_UTIL_ROTATE_0);
@@ -644,6 +780,14 @@ mm_util_resize_image(unsigned char *src, unsigned int src_width, unsigned int sr
 		return MM_ERROR_IMAGE_INVALID_VALUE;
 	}
 	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] Sucess _mm_set_imgp_info_s", __func__, __LINE__);
+
+	if(g_strrstr(g_module_name (_module), GST)) {
+		if(_mm_gst_can_resize_format(_imgp_info_s->input_format_label) == FALSE) {
+			mmf_debug(MMF_DEBUG_ERROR,"[%s][%05d] #RESIZE ERROR# IMAGE_NOT_SUPPORT_FORMAT", __func__, __LINE__);
+			_mm_util_imgp_finalize(_module, _imgp_info_s);
+			return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+		}
+	}
 
 	/* image processing */
 	_mm_util_imgp_func = _mm_util_imgp_process(_module);
@@ -714,8 +858,8 @@ mm_util_rotate_image(unsigned char *src, unsigned int src_width, unsigned int sr
 	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d]  #START#", __func__, __LINE__);
 	imgp_info_s* _imgp_info_s=(imgp_info_s*)malloc(sizeof(imgp_info_s));
 	unsigned int dst_size=0;
-	IMGPInfoFunc  _mm_util_imgp_func  = NULL;
-	GModule *_module  = NULL;
+	IMGPInfoFunc  _mm_util_imgp_func = NULL;
+	GModule *_module = NULL;
 	imgp_plugin_type_e _imgp_plugin_type_e=-1;
 
 	/* Initialize */
@@ -724,12 +868,12 @@ mm_util_rotate_image(unsigned char *src, unsigned int src_width, unsigned int sr
 	}else {
 		_imgp_plugin_type_e = IMGP_GSTCS;
 	}
-	_module  = _mm_util_imgp_initialize(_imgp_plugin_type_e);
+	_module = _mm_util_imgp_initialize(_imgp_plugin_type_e);
 	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] _mm_util_imgp_func: %p", __func__, __LINE__, _module);
 	if(_module == NULL) { //when IMGP_NEON is NULL
 		_imgp_plugin_type_e = IMGP_GSTCS;
 		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] You use %s module", __func__, __LINE__, PATH_GSTCS_LIB);
-		_module  = _mm_util_imgp_initialize(_imgp_plugin_type_e);
+		_module = _mm_util_imgp_initialize(_imgp_plugin_type_e);
 	}
 	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] _mm_set_imgp_info_s", __func__, __LINE__);
 	ret=_mm_confirm_dst_width_height(src_width, src_height, dst_width, dst_height, angle);
@@ -745,6 +889,14 @@ mm_util_rotate_image(unsigned char *src, unsigned int src_width, unsigned int sr
 		return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
 	}
 	mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] Sucess _mm_set_imgp_info_s", __func__, __LINE__);
+
+	if(g_strrstr(g_module_name (_module), GST)) {
+		if(_mm_gst_can_rotate_format(_imgp_info_s->input_format_label) == FALSE) {
+			mmf_debug(MMF_DEBUG_ERROR,"[%s][%05d] #gstreamer ROTATE ERROR# IMAGE_NOT_SUPPORT_FORMAT", __func__, __LINE__);
+			_mm_util_imgp_finalize(_module, _imgp_info_s);
+			return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+		}
+	}
 
 	/* image processing */
 	_mm_util_imgp_func = _mm_util_imgp_process(_module);
@@ -776,6 +928,61 @@ mm_util_rotate_image(unsigned char *src, unsigned int src_width, unsigned int sr
 		mmf_debug(MMF_DEBUG_ERROR, "[%s][%05d] _mm_util_imgp_finalize failed", __func__, __LINE__);
 		return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
 	}
+	return ret;
+}
+
+EXPORT_API int
+mm_util_crop_image(unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
+unsigned int crop_start_x, unsigned int crop_start_y, unsigned int *crop_dest_width, unsigned int *crop_dest_height, unsigned char *dst)
+{
+	int ret = MM_ERROR_NONE;
+
+	if (!src || !dst) {
+		mmf_debug (MMF_DEBUG_ERROR, "[%s][%05d] invalid argument\n", __func__, __LINE__);
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
+
+	if( (src_format < MM_UTIL_IMG_FMT_YUV420) || (src_format > MM_UTIL_IMG_FMT_NUM) ) {
+		mmf_debug(MMF_DEBUG_ERROR, "[%s][%05d] #ERROR# src_format value", __func__, __LINE__);
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
+
+	if( (*crop_dest_width < 0) || (*crop_dest_height < 0) || (crop_start_x +*crop_dest_width > src_width) || (crop_start_y +*crop_dest_height > src_height) ) {
+		mmf_debug(MMF_DEBUG_ERROR, "[%s][%05d] #ERROR# dest width | height value", __func__, __LINE__);
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
+
+	switch (src_format) {
+		case MM_UTIL_IMG_FMT_RGB888: {
+			ret = _mm_util_crop_rgb888(src, src_width, src_height, src_format, crop_start_x, crop_start_y, *crop_dest_width, *crop_dest_height, dst);
+			break;
+			}
+		case MM_UTIL_IMG_FMT_RGB565: {
+			ret = _mm_util_crop_rgb565(src, src_width, src_height, src_format, crop_start_x, crop_start_y, *crop_dest_width, *crop_dest_height, dst);
+			break;
+			}
+		case MM_UTIL_IMG_FMT_ARGB8888:
+		case MM_UTIL_IMG_FMT_BGRA8888:
+		case MM_UTIL_IMG_FMT_RGBA8888:
+		case MM_UTIL_IMG_FMT_BGRX8888: {
+			ret = _mm_util_crop_rgba32(src, src_width, src_height, src_format, crop_start_x, crop_start_y, *crop_dest_width, *crop_dest_height, dst);
+			break;
+			}
+		case MM_UTIL_IMG_FMT_I420:
+		case MM_UTIL_IMG_FMT_YUV420: {
+			if( (*crop_dest_width %2) !=0 ) {
+				mmf_debug(MMF_DEBUG_WARNING, "[%s][%05d] #YUV Width value(%d) must be even at least# ", __func__, __LINE__, *crop_dest_width);
+				*crop_dest_width = ((*crop_dest_width+1)>>1)<<1;
+				mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] Image isplay is suceeded when YUV crop width value %d ", __func__, __LINE__,*crop_dest_width);
+			}
+
+			ret = _mm_util_crop_yuv420(src, src_width, src_height, src_format, crop_start_x, crop_start_y, *crop_dest_width, *crop_dest_height, dst);
+			break;
+			}
+		default:
+			mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] Not supported format", __func__, __LINE__);
+	}
+
 	return ret;
 }
 

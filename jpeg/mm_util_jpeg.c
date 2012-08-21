@@ -54,6 +54,19 @@
 #define YUV422_SIZE(width, height)	(width*height<<1)
 #endif
 
+/* H/W JPEG codec */
+#include <dlfcn.h>
+#define ENV_NAME_USE_HW_CODEC           "IMAGE_UTIL_USE_HW_CODEC"
+#define LIB_PATH_HW_CODEC_LIBRARY       "/usr/lib/libmm_jpeg_hw.so"
+#define ENCODE_JPEG_HW_FUNC_NAME        "mm_jpeg_encode_hw"
+#define DECODE_JPEG_HW_FUNC_NAME        "mm_jpeg_decode_hw"
+typedef int (*EncodeJPEGFunc)(unsigned char *src, int width, int height, mm_util_jpeg_yuv_format in_fmt, int quality,
+                              unsigned char **dst, int *dst_size);
+typedef int (*DecodeJPEGFunc)(unsigned char *src, int src_size, mm_util_jpeg_yuv_format out_fmt,
+                              unsigned char **dst, int *dst_width, int *dst_height, int *dst_size);
+static int _read_file(char *file_name, void **data, int *data_size);
+static int _write_file(char *file_name, void *data, int data_size);
+
 #define PARTIAL_DECODE 0
 #define LIBJPEG 1
 #if LIBJPEG_TURBO
@@ -1020,6 +1033,8 @@ EXPORT_API int
 mm_util_jpeg_encode_to_file(char *filename, void* src, int width, int height, mm_util_jpeg_yuv_format fmt, int quality)
 {
 	int ret = MM_ERROR_NONE;
+	int use_hw_codec = 0;
+	char *env_value = NULL;
 
 	if( !filename || !src) {
 		mmf_debug(MMF_DEBUG_ERROR, "[%s][%05d] #ERROR# filename || src buffer is NULL", __func__, __LINE__);
@@ -1041,6 +1056,69 @@ mm_util_jpeg_encode_to_file(char *filename, void* src, int width, int height, mm
 		return MM_ERROR_IMAGE_INVALID_VALUE;
 	}
 
+	/* check environment value */
+	env_value = getenv(ENV_NAME_USE_HW_CODEC);
+	if (env_value) {
+		use_hw_codec = atoi(env_value);
+		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] %s - value str:%s -> int:%d", __func__, __LINE__,
+		                         ENV_NAME_USE_HW_CODEC, env_value, use_hw_codec);
+	}
+
+	/* check whether support HW codec */
+	if (use_hw_codec) {
+		int size = 0;
+		void *mem = NULL;
+		void *dl_handle = NULL;
+		EncodeJPEGFunc encode_jpeg_func = NULL;
+
+		/* dlopen library */
+		dl_handle = dlopen(LIB_PATH_HW_CODEC_LIBRARY, RTLD_LAZY);
+		if (!dl_handle) {
+			mmf_debug(MMF_DEBUG_WARNING, "[%s][%05d] H/W JPEG not supported", __func__, __LINE__);
+			goto JPEG_SW_ENCODE;
+		}
+
+		/* find function symbol */
+		encode_jpeg_func = (EncodeJPEGFunc)dlsym(dl_handle, ENCODE_JPEG_HW_FUNC_NAME);
+		if (!encode_jpeg_func) {
+			mmf_debug(MMF_DEBUG_WARNING, "[%s][%05d] find func[%s] failed", __func__, __LINE__,
+			                             ENCODE_JPEG_HW_FUNC_NAME);
+			/* close dl_handle */
+			dlclose(dl_handle);
+			dl_handle = NULL;
+			goto JPEG_SW_ENCODE;
+		}
+
+		/* Do H/W jpeg encoding */
+		ret = encode_jpeg_func(src, width, height, fmt, quality, (unsigned char **)&mem, &size);
+
+		/* close dl_handle */
+		dlclose(dl_handle);
+		dl_handle = NULL;
+
+		if (ret == MM_ERROR_NONE) {
+			mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] HW ENCODE DONE.. Write file", __func__, __LINE__);
+			if (mem && size > 0) {
+				if (!_write_file(filename, mem, size)) {
+					mmf_debug(MMF_DEBUG_ERROR, "[%s][%05d] failed Write file", __func__, __LINE__);
+					ret = MM_ERROR_IMAGE_INTERNAL;
+				}
+
+				free(mem);
+				mem = NULL;
+				size = 0;
+
+				return ret;
+			} else {
+				mmf_debug(MMF_DEBUG_WARNING, "[%s][%05d] invalid data %p, size %d",
+				                             __func__, __LINE__, mem, size);
+			}
+		} else {
+			mmf_debug(MMF_DEBUG_WARNING, "[%s][%05d] HW encode failed %x", __func__, __LINE__, ret);
+		}
+	}
+
+JPEG_SW_ENCODE:
 	#if LIBJPEG_TURBO
 	mmf_debug(MMF_DEBUG_LOG, "[%s] [%05d] #START# LIBJPEG_TURBO", __func__, __LINE__);
 	ret=mm_image_encode_to_jpeg_file_with_libjpeg_turbo(filename, src, width, height, fmt, quality);
@@ -1058,6 +1136,8 @@ EXPORT_API int
 mm_util_jpeg_encode_to_memory(void **mem, int *size, void* src, int width, int height, mm_util_jpeg_yuv_format fmt, int quality)
 {
 	int ret = MM_ERROR_NONE;
+	int use_hw_codec = 0;
+	char *env_value = NULL;
 
 	if( !mem || !size || !src) {
 		mmf_debug(MMF_DEBUG_ERROR, "[%s][%05d] #ERROR# filename ||size ||  src buffer is NULL", __func__, __LINE__);
@@ -1079,16 +1159,63 @@ mm_util_jpeg_encode_to_memory(void **mem, int *size, void* src, int width, int h
 		return MM_ERROR_IMAGE_INVALID_VALUE;
 	}
 
+	/* check environment value */
+	env_value = getenv(ENV_NAME_USE_HW_CODEC);
+	if (env_value) {
+		use_hw_codec = atoi(env_value);
+		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] %s - value str:%s -> int:%d", __func__, __LINE__,
+		                         ENV_NAME_USE_HW_CODEC, env_value, use_hw_codec);
+	}
+
+	/* check whether support HW codec */
+	if (use_hw_codec) {
+		void *dl_handle = NULL;
+		EncodeJPEGFunc encode_jpeg_func = NULL;
+
+		/* dlopen library */
+		dl_handle = dlopen(LIB_PATH_HW_CODEC_LIBRARY, RTLD_LAZY);
+		if (!dl_handle) {
+			mmf_debug(MMF_DEBUG_WARNING, "[%s][%05d] H/W JPEG not supported", __func__, __LINE__);
+			goto JPEG_SW_ENCODE;
+		}
+
+		/* find function symbol */
+		encode_jpeg_func = (EncodeJPEGFunc)dlsym(dl_handle, ENCODE_JPEG_HW_FUNC_NAME);
+		if (!encode_jpeg_func) {
+			mmf_debug(MMF_DEBUG_WARNING, "[%s][%05d] find func[%s] failed", __func__, __LINE__,
+			                             ENCODE_JPEG_HW_FUNC_NAME);
+			/* close dl_handle */
+			dlclose(dl_handle);
+			dl_handle = NULL;
+			goto JPEG_SW_ENCODE;
+		}
+
+		/* Do H/W jpeg encoding */
+		ret = encode_jpeg_func(src, width, height, fmt, quality, (unsigned char **)mem, size);
+
+		/* close dl_handle */
+		dlclose(dl_handle);
+		dl_handle = NULL;
+
+		if (ret == MM_ERROR_NONE) {
+			mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] HW ENCODE DONE", __func__, __LINE__);
+			return ret;
+		} else {
+			mmf_debug(MMF_DEBUG_WARNING, "[%s][%05d] HW encode failed %x", __func__, __LINE__, ret);
+		}
+	}
+
+JPEG_SW_ENCODE:
 	#if LIBJPEG_TURBO
 	mmf_debug(MMF_DEBUG_LOG, "[%s] [%05d] #START# libjpeg", __func__, __LINE__);
 	ret=mm_image_encode_to_jpeg_memory_with_libjpeg_turbo(mem, size, src, width, height, fmt, quality);
 	mmf_debug(MMF_DEBUG_LOG, "[%s] [%05d] #END# libjpeg, Success!! ret: %d", __func__, __LINE__, ret);
-
-	#else
+	#else /* LIBJPEG_TURBO */
 	mmf_debug(MMF_DEBUG_LOG, "[%s] [%05d] #START# libjpeg", __func__, __LINE__);
 	ret = mm_image_encode_to_jpeg_memory_with_libjpeg(mem, size, src, width, height, fmt, quality);
 	mmf_debug(MMF_DEBUG_LOG, "[%s] [%05d] #End# libjpeg, Success!! ret: %d", __func__, __LINE__, ret);
-	#endif
+	#endif /* LIBJPEG_TURBO */
+
 	return ret;
 }
 
@@ -1096,6 +1223,8 @@ EXPORT_API int
 mm_util_decode_from_jpeg_file(mm_util_jpeg_yuv_data *decoded, char *filename, mm_util_jpeg_yuv_format fmt)
 {
 	int ret = MM_ERROR_NONE;
+	int use_hw_codec = 0;
+	char *env_value = NULL;
 
 	if( !decoded || !filename) {
 		mmf_debug(MMF_DEBUG_ERROR, "[%s][%05d] #ERROR# decoded || filename buffer is NULL", __func__, __LINE__);
@@ -1107,25 +1236,85 @@ mm_util_decode_from_jpeg_file(mm_util_jpeg_yuv_data *decoded, char *filename, mm
 		return MM_ERROR_IMAGE_INVALID_VALUE;
 	}
 
+	/* check environment value */
+	env_value = getenv(ENV_NAME_USE_HW_CODEC);
+	if (env_value) {
+		use_hw_codec = atoi(env_value);
+		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] %s - value str:%s -> int:%d", __func__, __LINE__,
+		                         ENV_NAME_USE_HW_CODEC, env_value, use_hw_codec);
+	}
+
+	/* check whether support HW codec */
+	if (use_hw_codec) {
+		void *src = NULL;
+		int src_size = 0;
+		void *dl_handle = NULL;
+		DecodeJPEGFunc decode_jpeg_func = NULL;
+
+		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] START H/W JPEG DECODE", __func__, __LINE__);
+
+		/* dlopen library */
+		dl_handle = dlopen(LIB_PATH_HW_CODEC_LIBRARY, RTLD_LAZY);
+		if (!dl_handle) {
+			mmf_debug(MMF_DEBUG_WARNING, "[%s][%05d] H/W JPEG not supported", __func__, __LINE__);
+			goto JPEG_SW_DECODE;
+		}
+
+		/* find function symbol */
+		decode_jpeg_func = (DecodeJPEGFunc)dlsym(dl_handle, DECODE_JPEG_HW_FUNC_NAME);
+		if (!decode_jpeg_func) {
+			mmf_debug(MMF_DEBUG_WARNING, "[%s][%05d] find func[%s] failed", __func__, __LINE__,
+			                             DECODE_JPEG_HW_FUNC_NAME);
+			/* close dl_handle */
+			dlclose(dl_handle);
+			dl_handle = NULL;
+			goto JPEG_SW_DECODE;
+		}
+
+		if (!_read_file(filename, &src, &src_size)) {
+			mmf_debug(MMF_DEBUG_WARNING, "[%s][%05d] read file [%s] failed", __func__, __LINE__,
+			                             DECODE_JPEG_HW_FUNC_NAME);
+			/* close dl_handle */
+			dlclose(dl_handle);
+			dl_handle = NULL;
+			goto JPEG_SW_DECODE;
+		}
+
+		/* Do H/W jpeg encoding */
+		ret = decode_jpeg_func(src, src_size, fmt, (unsigned char **)&decoded->data, &decoded->width, &decoded->height, &decoded->size);
+
+		/* release src buffer */
+		if (src) {
+			free(src);
+			src_size = 0;
+		}
+
+		/* close dl_handle */
+		dlclose(dl_handle);
+		dl_handle = NULL;
+
+		/* check decoding result */
+		if (ret == MM_ERROR_NONE) {
+			decoded->format = fmt;
+			mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] HW encode DONE", __func__, __LINE__);
+			return ret;
+		} else {
+			mmf_debug(MMF_DEBUG_WARNING, "[%s][%05d] HW encode failed %x", __func__, __LINE__, ret);
+		}
+	}
+
+JPEG_SW_DECODE:
 #if LIBJPEG_TURBO
 	mmf_debug(MMF_DEBUG_LOG, "[%s] [%05d] #START# LIBJPEG_TURBO", __func__, __LINE__);
 	ret = mm_image_decode_from_jpeg_file_with_libjpeg_turbo(decoded, filename, fmt);
 	mmf_debug(MMF_DEBUG_LOG, "[%s] [%05d] decoded->data: %p\t width: %d\t height: %d\t size: %d\n", __func__, __LINE__, decoded->data, decoded->width, decoded->height, decoded->size);
 	mmf_debug(MMF_DEBUG_LOG, "[%s] [%05d] #End# LIBJPEG_TURBO, Success!! ret: %d", __func__, __LINE__, ret);
 #else
-	#if HW_JPEG_DECODE
-	mmf_debug(MMF_DEBUG_LOG, "[%s] [%05d] [mm_image_decode_from_jpeg_file_with_c110hw] Start", __func__, __LINE__);
-	ret = mm_image_decode_from_jpeg_file_with_c110hw(decoded, filename, fmt);
-	mmf_debug(MMF_DEBUG_LOG, "decoded->data: %p\t width: %d\t height:%d\n", decoded->data, decoded->width, decoded->height);
-	mmf_debug(MMF_DEBUG_LOG, "[%s] [%05d] [mm_image_decode_from_jpeg_file_with_c110hw] End, Success!! ret: %d", ret);
-
-	#elif LIBJPEG
 	mmf_debug(MMF_DEBUG_LOG, "[%s] [%05d] #START# libjpeg", __func__, __LINE__);
 	ret = mm_image_decode_from_jpeg_file_with_libjpeg(decoded, filename, fmt);
 	mmf_debug(MMF_DEBUG_LOG, "[%s] [%05d] decoded->data: %p\t width: %d\t height:%d\t size: %d\n", __func__, __LINE__, decoded->data, decoded->width, decoded->height, decoded->size);
 	mmf_debug(MMF_DEBUG_LOG, "[%s] [%05d] #End# libjpeg, Success!! ret: %d", __func__, __LINE__, ret);
 	#endif
-#endif
 	return ret;
 }
 
@@ -1133,6 +1322,8 @@ EXPORT_API int
 mm_util_decode_from_jpeg_memory(mm_util_jpeg_yuv_data* decoded, void* src, int size, mm_util_jpeg_yuv_format fmt)
 {
 	int ret = MM_ERROR_NONE;
+	int use_hw_codec = 0;
+	char *env_value = NULL;
 
 	if( !decoded || !src) {
 		mmf_debug(MMF_DEBUG_ERROR, "[%s][%05d] #ERROR# decoded || src buffer is NULL", __func__, __LINE__);
@@ -1149,6 +1340,57 @@ mm_util_decode_from_jpeg_memory(mm_util_jpeg_yuv_data* decoded, void* src, int s
 		return MM_ERROR_IMAGE_INVALID_VALUE;
 	}
 
+	/* check environment value */
+	env_value = getenv(ENV_NAME_USE_HW_CODEC);
+	if (env_value) {
+		use_hw_codec = atoi(env_value);
+		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] %s - value str:%s -> int:%d", __func__, __LINE__,
+		                         ENV_NAME_USE_HW_CODEC, env_value, use_hw_codec);
+	}
+
+	/* check whether support HW codec */
+	if (use_hw_codec) {
+		void *dl_handle = NULL;
+		DecodeJPEGFunc decode_jpeg_func = NULL;
+
+		mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] START H/W JPEG DECODE", __func__, __LINE__);
+
+		/* dlopen library */
+		dl_handle = dlopen(LIB_PATH_HW_CODEC_LIBRARY, RTLD_LAZY);
+		if (!dl_handle) {
+			mmf_debug(MMF_DEBUG_WARNING, "[%s][%05d] H/W JPEG not supported", __func__, __LINE__);
+			goto JPEG_SW_DECODE;
+		}
+
+		/* find function symbol */
+		decode_jpeg_func = (DecodeJPEGFunc)dlsym(dl_handle, DECODE_JPEG_HW_FUNC_NAME);
+		if (!decode_jpeg_func) {
+			mmf_debug(MMF_DEBUG_WARNING, "[%s][%05d] find func[%s] failed", __func__, __LINE__,
+			                             DECODE_JPEG_HW_FUNC_NAME);
+			/* close dl_handle */
+			dlclose(dl_handle);
+			dl_handle = NULL;
+			goto JPEG_SW_DECODE;
+		}
+
+		/* Do H/W jpeg encoding */
+		ret = decode_jpeg_func(src, size, fmt, (unsigned char **)&decoded->data, &decoded->width, &decoded->height, &decoded->size);
+
+		/* close dl_handle */
+		dlclose(dl_handle);
+		dl_handle = NULL;
+
+		/* check decoding result */
+		if (ret == MM_ERROR_NONE) {
+			decoded->format = fmt;
+			mmf_debug(MMF_DEBUG_LOG, "[%s][%05d] HW DECODE DONE", __func__, __LINE__);
+			return ret;
+		} else {
+			mmf_debug(MMF_DEBUG_WARNING, "[%s][%05d] HW encode failed %x", __func__, __LINE__, ret);
+		}
+	}
+
+JPEG_SW_DECODE:
 	#if LIBJPEG_TURBO
 	mmf_debug(MMF_DEBUG_LOG, "[%s] [%05d] #START# libjpeg", __func__, __LINE__);
 	ret = mm_image_decode_from_jpeg_memory_with_libjpeg_turbo(decoded, src, size, fmt);
@@ -1165,3 +1407,80 @@ mm_util_decode_from_jpeg_memory(mm_util_jpeg_yuv_data* decoded, void* src, int s
 	#endif
 	return ret;
 }
+
+
+static int _read_file(char *file_name, void **data, int *data_size)
+{
+	FILE *fp = NULL;
+	int file_size = 0;
+
+	if (!file_name || !data || !data_size) {
+		mmf_debug(MMF_DEBUG_ERROR, "[%s] [%05d] NULL pointer",
+		                           __func__, __LINE__);
+		return FALSE;
+	}
+
+	mmf_debug(MMF_DEBUG_LOG, "[%s] [%05d] Try to open %s to read",
+	                         __func__, __LINE__, file_name);
+
+	fp = fopen(file_name, "r");
+	if (fp == NULL) {
+		mmf_debug(MMF_DEBUG_ERROR, "[%s] [%05d] file open failed errno %d",
+		                           __func__, __LINE__, errno);
+		return FALSE;
+	}
+
+	fseek(fp, 0, SEEK_END);
+	file_size = ftell(fp);
+	rewind(fp);
+	*data = (void *)malloc(file_size);
+	if (*data == NULL) {
+		mmf_debug(MMF_DEBUG_ERROR, "[%s] [%05d] malloc failed errno %d",
+		                           __func__, __LINE__, errno);
+	} else {
+		fread(*data, 1, file_size, fp);
+	}
+
+	fclose(fp);
+	fp = NULL;
+
+	if (*data) {
+		*data_size = file_size;
+		return TRUE;
+	} else {
+		*data_size = 0;
+		return FALSE;
+	}
+}
+
+
+static int _write_file(char *file_name, void *data, int data_size)
+{
+	FILE *fp = NULL;
+
+	if (!file_name || !data || data_size <= 0) {
+		mmf_debug(MMF_DEBUG_ERROR, "[%s] [%05d] invalid data %s %p size:%d",
+		                           __func__, __LINE__, file_name, data, data_size);
+		return FALSE;
+	}
+
+	mmf_debug(MMF_DEBUG_LOG, "[%s] [%05d] Try to open %s to write",
+	                         __func__, __LINE__, file_name);
+
+	fp = fopen(file_name, "w");
+	if (fp) {
+		fwrite(data, 1, data_size, fp);
+		fclose(fp);
+		fp = NULL;
+	} else {
+		mmf_debug(MMF_DEBUG_ERROR, "[%s] [%05d] file open [%s] failed errno %d",
+		                           __func__, __LINE__, file_name, errno);
+		return FALSE;
+	}
+
+	mmf_debug(MMF_DEBUG_LOG, "[%s] [%05d] file [%s] write DONE",
+	                         __func__, __LINE__, file_name);
+
+	return TRUE;
+}
+

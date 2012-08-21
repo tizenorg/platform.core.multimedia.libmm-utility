@@ -157,8 +157,27 @@ mm_util_rotate_image(unsigned char *src, unsigned int src_width, unsigned int sr
                      unsigned char *dst, unsigned int *dst_width, unsigned int *dst_height, mm_util_img_rotate_type angle);
 
 /**
-	@}
+ * This function crop the source image.
+ *
+ * @param	src         [in]                pointer of source image data
+ * @param	src_width   [in]             pixel size of source image width
+ * @param	src_height  [in]             pixel size of source image height
+ * @param	src_format  [in]            pixel format of source image
+ * @param	crop_start_x   [in]         pixel point of cropped image
+ * @param	crop_start_y  [in]          pixel point of cropped image
+ * @param	crop_dest_width   [in/out]   cropped image width (value is changed when yuv image width is odd)
+ * @param	crop_dest_height  [in/out]   cropped image height
+
+ * @param	dst         [in/out]    pointer of destination image data
+ *
+ * @return      This function returns zero on success, or negative value with error code.
+ * @remark
+ * @see         mm_util_img_format, mm_util_img_rotate_type
+ * @since       R1, 1.0
  */
+int
+mm_util_crop_image(unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
+                     unsigned int crop_start_x, unsigned int crop_start_y, unsigned int *crop_dest_width, unsigned int *crop_dest_height, unsigned char *dst);
 
 #ifdef __cplusplus
 }
