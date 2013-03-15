@@ -51,7 +51,7 @@ sed -i -e "s#@JPEG_REQPKG@#$JPEG_REQPKG#g" jpeg/mmutil-jpeg.pc
 rm -rf %{buildroot}
 %make_install
 mkdir -p %{buildroot}/usr/share/license
-cp LICENSE.APLv2.0 %{buildroot}/usr/share/license/%{name}
+cp LICENSE %{buildroot}/usr/share/license/%{name}
 
 %clean
 rm -rf %{buildroot}
