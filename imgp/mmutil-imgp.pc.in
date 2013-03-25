@@ -8,5 +8,5 @@ Description : Multimedia Framework Utility Library
 Requires : @IMGP_REQPKG@
 Version : @VERSION@
 Libs : -L${libdir} -lmmutil_imgp
-Cflags : -I${includedir}/mmf
+Cflags : -I${includedir}/mmf -DLIBPREFIX=\"${libdir}\"
 

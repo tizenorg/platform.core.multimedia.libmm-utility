@@ -14,7 +14,7 @@ libmmutil_jpeg_la_CFLAGS = -I$(srcdir)/include \
 libmmutil_jpeg_la_LIBADD = $(MMCOMMON_LIBS) -ljpeg -ldl \
 			   $(MMTA_LIBS)  
 
-libmmutil_jpeg_la_CFLAGS += $(MMLOG_CFLAGS) -DMMF_LOG_OWNER=0x0100 -DMMF_DEBUG_PREFIX=\"MMF-IMAGE\"
+libmmutil_jpeg_la_CFLAGS += $(MMLOG_CFLAGS) -DMMF_LOG_OWNER=0x0100 -DMMF_DEBUG_PREFIX=\"MMF-IMAGE\" -DLIBPREFIX=\"$(libdir)\"
 
 pcfiles = mmutil-jpeg.pc
 pkgconfigdir = $(libdir)/pkgconfig

@@ -32,8 +32,8 @@
 #include <gmodule.h>
 #include <mm_debug.h>
 
-#define PATH_NEON_LIB					"/usr/lib/libmmutil_imgp_neon.so"
-#define PATH_GSTCS_LIB					"/usr/lib/libmmutil_imgp_gstcs.so"
+#define PATH_NEON_LIB					LIBPREFIX  "/libmmutil_imgp_neon.so"
+#define PATH_GSTCS_LIB					LIBPREFIX "/libmmutil_imgp_gstcs.so"
 
 #define IMGP_FUNC_NAME  				"mm_imgp"
 #define IMAGE_FORMAT_LABEL_BUFFER_SIZE 9

@@ -57,7 +57,7 @@
 /* H/W JPEG codec */
 #include <dlfcn.h>
 #define ENV_NAME_USE_HW_CODEC           "IMAGE_UTIL_USE_HW_CODEC"
-#define LIB_PATH_HW_CODEC_LIBRARY       "/usr/lib/libmm_jpeg_hw.so"
+#define LIB_PATH_HW_CODEC_LIBRARY       LIBPREFIX "/libmm_jpeg_hw.so"
 #define ENCODE_JPEG_HW_FUNC_NAME        "mm_jpeg_encode_hw"
 typedef int (*EncodeJPEGFunc)(unsigned char *src, int width, int height, mm_util_jpeg_yuv_format in_fmt, int quality,
                               unsigned char **dst, int *dst_size);
