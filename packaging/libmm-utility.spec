@@ -5,6 +5,7 @@ Release:    1
 Group:      System/Libraries
 License:    Apache
 Source0:    %{name}-%{version}.tar.gz
+Source1001: 	libmm-utility.manifest
 Requires(post):  /sbin/ldconfig
 Requires(postun):  /sbin/ldconfig
 BuildRequires:  pkgconfig(mm-common)
@@ -35,6 +36,7 @@ Requires:   %{name} = %{version}-%{release}
 
 %prep
 %setup -q
+cp %{SOURCE1001} .
 
 %build
 ./autogen.sh
@@ -61,6 +63,7 @@ rm -rf %{buildroot}
 
 
 %files
+%manifest %{name}.manifest
 /usr/share/license/%{name}
 %manifest libmm-utility.manifest
 %defattr(-,root,root,-)
@@ -68,10 +71,12 @@ rm -rf %{buildroot}
 #%exclude %{_bindir}/*_testsuite
 
 %files devel
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_includedir}/*
 %{_libdir}/pkgconfig/*
 
 %files tool
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_bindir}/*_testsuite
