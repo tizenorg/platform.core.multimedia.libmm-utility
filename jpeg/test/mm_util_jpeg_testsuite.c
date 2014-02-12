@@ -30,8 +30,11 @@
 #include <mm_ta.h>
 #include <mm_error.h>
 #include <mm_debug.h>
-#define ENCODE_RESULT_PATH "/opt/usr/media/encode_test.jpg"
-#define DECODE_RESULT_PATH "/opt/usr/media/decode_test."
+#include <tzplatform_config.h>
+
+#define ENCODE_RESULT_PATH tzplatform_mkpath(TZ_USER_CONTENT, "encode_test.jpg")
+#define DECODE_RESULT_PATH tzplatform_mkpath(TZ_USER_CONTENT, "decode_test.")
+
 #define TRUE  1
 #define FALSE 0
 #define BUFFER_SIZE 128

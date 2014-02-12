@@ -14,6 +14,7 @@ BuildRequires:  pkgconfig(mm-ta)
 BuildRequires:  pkgconfig(glib-2.0)
 BuildRequires:  pkgconfig(gmodule-2.0)
 BuildRequires:  libjpeg-turbo-devel
+BuildRequires:  pkgconfig(libtzplatform-config)
 
 BuildRoot:  %{_tmppath}/%{name}-%{version}-build
 
