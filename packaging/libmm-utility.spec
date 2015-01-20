@@ -1,6 +1,6 @@
 Name:       libmm-utility
 Summary:    Multimedia Framework Utility Library
-Version:    0.7
+Version:    0.8
 Release:    0
 Group:      System/Libraries
 License:    Apache-2.0
@@ -10,11 +10,15 @@ Requires(post):    /sbin/ldconfig
 Requires(postun):  /sbin/ldconfig
 BuildRequires:  pkgconfig(mm-common)
 BuildRequires:  pkgconfig(mm-log)
-BuildRequires:  pkgconfig(mm-ta)
 BuildRequires:  pkgconfig(glib-2.0)
 BuildRequires:  pkgconfig(gmodule-2.0)
 BuildRequires:  libjpeg-turbo-devel
 BuildRequires:  pkgconfig(libtzplatform-config)
+BuildRequires:  pkgconfig(capi-media-tool)
+BuildRequires:  pkgconfig(libtbm)
+BuildRequires:  pkgconfig(libexif)
+BuildRequires:  pkgconfig(capi-system-info)
+BuildRoot:  %{_tmppath}/%{name}-%{version}-build
 
 %description
 Multimedia Framework Utility Library - Main package.
