@@ -1,6 +1,6 @@
 Name:       libmm-utility
 Summary:    Multimedia Framework Utility Library
-Version:    0.8
+Version:    0.9
 Release:    0
 Group:      System/Libraries
 License:    Apache-2.0
