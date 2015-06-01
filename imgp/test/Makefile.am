@@ -13,7 +13,7 @@ mm_util_imgp_testsuite_CFLAGS = -I$(srcdir)/../include \
 				  $(DRI2PROTO_CFLAGS) \
 				  $(DRI2_CFLAGS) \
 				  $(TBM_CFLAGS) \
-				  $(MMLOG_CFLAGS) -DMMF_LOG_OWNER=0x0100 -DMMF_DEBUG_PREFIX=\"MMF-IMAGE\" -D_INTERNAL_SESSION_MANAGER_
+				  $(MMLOG_CFLAGS) -DMMF_LOG_OWNER=0x0100 -DMMF_DEBUG_PREFIX=\"MMF-IMAGE\" -D_INTERNAL_SESSION_MANAGER_ -fPIE -pie
 
 ############################################
 

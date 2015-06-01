@@ -113,6 +113,11 @@ static int _write_file(char *file_name, void *data, int data_size)
 	fprintf(stderr, "\tTry to open %s to write\n", file_name);
 
 	fp = fopen(file_name, "w");
+	if (fp == NULL) {
+		fprintf(stderr, "\tfile open failed %d\n", errno);
+		return FALSE;
+	}
+
 	fwrite(data, 1, data_size, fp);
 	fclose(fp);
 	fp = NULL;
@@ -136,11 +141,13 @@ int main(int argc, char *argv[])
 
 	mm_util_jpeg_yuv_data decoded_data = {0,};
 	mm_util_jpeg_yuv_format fmt; /* = MM_UTIL_JPEG_FMT_RGB888; */
+	mm_util_jpeg_decode_downscale downscale;
 
 	if (argc < 2) {
 		fprintf(stderr, "\t[usage]\n");
 		fprintf(stderr, "\t\t1. encode : mm_util_jpeg_testsuite encode filepath.yuv width height quality\n");
 		fprintf(stderr, "\t\t2. decode : mm_util_jpeg_testsuite decode filepath.jpg\n");
+		fprintf(stderr, "\t\t3. decode_ds : mm_util_jpeg_testsuite decode_ds filepath.jpg format downscale\n");
 		return 0;
 	}
 
@@ -162,6 +169,17 @@ int main(int argc, char *argv[])
 		if (_read_file(argv[2], &src, &src_size)) {
 			fmt = atoi(argv[3]);
 			ret = mm_util_decode_from_jpeg_memory(&decoded_data, src, src_size, fmt);
+
+			free(src);
+			src = NULL;
+		} else {
+			ret = MM_ERROR_IMAGE_INTERNAL;
+		}
+	} else if (!strcmp("decode_ds", argv[1])) {
+		if (_read_file(argv[2], &src, &src_size)) {
+			fmt = atoi(argv[3]);
+			downscale = atoi(argv[4]);
+			ret = mm_util_decode_from_jpeg_memory_with_downscale(&decoded_data, src, src_size, fmt, downscale);
 
 			free(src);
 			src = NULL;
@@ -196,13 +214,14 @@ int main(int argc, char *argv[])
 				char filename[BUFFER_SIZE];
 				memset(filename, 0, BUFFER_SIZE);
 				if(fmt == MM_UTIL_JPEG_FMT_RGB888 || fmt == MM_UTIL_JPEG_FMT_RGBA8888 || fmt == MM_UTIL_JPEG_FMT_BGRA8888 || fmt == MM_UTIL_JPEG_FMT_ARGB8888) {
-					sprintf(filename, "%s%s", DECODE_RESULT_PATH, "rgb");
+					snprintf(filename, BUFFER_SIZE, "%s%s", DECODE_RESULT_PATH, "rgb");
 				} else if((fmt == MM_UTIL_JPEG_FMT_YUV420) ||
+					(fmt == MM_UTIL_JPEG_FMT_YUV422) ||
 					(fmt == MM_UTIL_JPEG_FMT_NV12) ||
 					(fmt == MM_UTIL_JPEG_FMT_NV21) ||
 					(fmt == MM_UTIL_JPEG_FMT_NV16) ||
 					(fmt == MM_UTIL_JPEG_FMT_NV61)) {
-					sprintf(filename, "%s%s", DECODE_RESULT_PATH, "yuv");
+					snprintf(filename, BUFFER_SIZE, "%s%s", DECODE_RESULT_PATH, "yuv");
 				}
 				_write_file(filename, decoded_data.data, decoded_data.size);
 

@@ -153,7 +153,7 @@ typedef struct
 	unsigned int dst_width;
 	unsigned int dst_height;
 	mm_util_rotation_e dst_rotation;
-
+	unsigned int _MMHandle;
 	bool hardware_acceleration;
 	mm_util_cb_s *_util_cb;
 	bool is_completed;
@@ -165,6 +165,11 @@ typedef struct
 	tbm_bo dst_bo;
 	unsigned int dst_key;
 	tbm_bo_handle dst_bo_handle;
+
+	bool set_convert;
+	bool set_crop;
+	bool set_resize;
+	bool set_rotate;
 
 	/* Src paramters */
 	guint src_buf_size; /**< for a standard colorspace format */
@@ -178,9 +183,10 @@ typedef struct
 	guint dst_buf_idx;
 
 	/* for multi instance */
-	GMutex * instance_lock;
-	GMutex *fd_lock;
-	GMutex *buf_idx_lock;
+	GCond* thread_cond;
+	GMutex *thread_mutex;
+	GThread* thread;
+	GAsyncQueue *queue;
 } mm_util_s;
 
 #ifdef __cplusplus

@@ -60,7 +60,17 @@
 #define MM_JPEG_ROUND_UP_2(num)  (((num)+1)&~1)
 #define MM_JPEG_ROUND_UP_4(num)  (((num)+3)&~3)
 #define MM_JPEG_ROUND_UP_8(num)  (((num)+7)&~7)
+#define MM_JPEG_ROUND_DOWN_2(num) ((num)&(~1))
+#define MM_JPEG_ROUND_DOWN_4(num) ((num)&(~3))
 #define MM_JPEG_ROUND_DOWN_16(num) ((num)&(~15))
+
+#define ERR_BUF_LENGHT 256
+#define mm_util_stderror(fmt) do { \
+			char buf[ERR_BUF_LENGHT] = {0,}; \
+			strerror_r(errno, buf, ERR_BUF_LENGHT); \
+			debug_error(fmt" : standard error= [%s]", buf); \
+		} while (0)
+
 #if LIBJPEG_TURBO
 #define PAD(v, p) ((v+(p)-1)&(~((p)-1)))
 #define _throwtj() {printf("TurboJPEG ERROR:\n%s\n", tjGetErrorStr());}
@@ -111,7 +121,8 @@ mm_image_codec_writeJPEG(unsigned char *jpegBuf, unsigned long jpegSize, char *f
 {
 	FILE *file=fopen(filename, "wb");
 	if(!file || fwrite(jpegBuf, jpegSize, 1, file)!=1) {
-		debug_error("ERROR: Could not write to %s \t %s", filename, strerror(errno));
+		debug_error("ERROR: Could not write to %s", filename);
+		mm_util_stderror("ERROR: Could not write");
 	}
 
 	if(file) fclose(file);
@@ -235,7 +246,8 @@ mm_image_decode_from_jpeg_file_with_libjpeg_turbo(mm_util_jpeg_yuv_data * decode
 
 	void *src = fopen(pFileName, "rb" );
 	if(src == NULL) {
-		debug_error("Error [%s] failed \t %s", pFileName, strerror(errno));
+		debug_error("Error [%s] failed", pFileName);
+		mm_util_stderror("Error file open failed");
 		return MM_ERROR_IMAGE_FILEOPEN;
 	}
 	fseek (src, 0,  SEEK_END);
@@ -362,7 +374,8 @@ mm_image_encode_to_jpeg_file_with_libjpeg_turbo(char *filename, void* src, int w
 	int TD_BU=0;
 	FILE *fout=fopen(filename, "w+");
 	if(fout == NULL) {
-		debug_error("FILE OPEN FAIL [%s] failed \t %s", filename, strerror(errno));
+		debug_error("FILE OPEN FAIL [%s] failed", filename);
+		mm_util_stderror("FILE OPEN FAIL");
 		return MM_ERROR_IMAGE_FILEOPEN;
 	}
 	debug_log("fmt: %d", fmt);
@@ -501,7 +514,8 @@ mm_image_encode_to_jpeg_file_with_libjpeg(char *pFileName, void *rawdata, int wi
 	jpeg_create_compress(&cinfo);
 
 	if ((fpWriter = fopen(pFileName, "wb")) == NULL) {
-		debug_error("[infile] file open [%s] failed \t %s", pFileName, strerror(errno));
+		debug_error("[infile] file open [%s] failed", pFileName);
+		mm_util_stderror("file open failed");
 		return MM_ERROR_IMAGE_FILEOPEN;
 	}
 
@@ -548,6 +562,7 @@ mm_image_encode_to_jpeg_file_with_libjpeg(char *pFileName, void *rawdata, int wi
 			if(large_rect) {
 				memset(large_rect, 0x10, width);
 			} else {
+				free(small_rect);
 				debug_error("large rectangle memory");
 				return MM_ERROR_IMAGEHANDLE_NOT_INITIALIZED;
 			}
@@ -744,6 +759,7 @@ mm_image_encode_to_jpeg_memory_with_libjpeg(void **mem, int *csize, void *rawdat
 			if(large_rect) {
 				memset(large_rect, 0x10, width);
 			} else {
+				free(small_rect);
 				debug_error("large rectangle memory");
 				return MM_ERROR_IMAGEHANDLE_NOT_INITIALIZED;
 			}
@@ -863,7 +879,7 @@ mm_image_encode_to_jpeg_memory_with_libjpeg(void **mem, int *csize, void *rawdat
 }
 
 static int
-mm_image_decode_from_jpeg_file_with_libjpeg(mm_util_jpeg_yuv_data * decoded_data, char *pFileName, mm_util_jpeg_yuv_format input_fmt)
+mm_image_decode_from_jpeg_file_with_libjpeg(mm_util_jpeg_yuv_data * decoded_data, char *pFileName, mm_util_jpeg_yuv_format input_fmt, mm_util_jpeg_decode_downscale downscale)
 {
 	int iErrorCode	= MM_ERROR_NONE;
 	FILE *infile		= NULL;
@@ -880,13 +896,18 @@ mm_image_decode_from_jpeg_file_with_libjpeg(mm_util_jpeg_yuv_data * decoded_data
 		debug_error("pFileName");
 		return MM_ERROR_IMAGE_FILEOPEN;
 	}
+	if(decoded_data == NULL) {
+		debug_error("decoded_data");
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
 	if(decoded_data) {
 		decoded_data->data = NULL;
 	}
 
 	infile = fopen(pFileName, "rb");
 	if(infile == NULL) {
-		debug_error("[infile] file open [%s] \t %s", pFileName, strerror(errno));
+		debug_error("[infile] file open [%s]", pFileName);
+		mm_util_stderror("file open failed");
 		return MM_ERROR_IMAGE_FILEOPEN;
 	}
 	debug_log("infile");
@@ -930,6 +951,12 @@ mm_image_decode_from_jpeg_file_with_libjpeg(mm_util_jpeg_yuv_data * decoded_data
 		dinfo.do_fancy_upsampling = FALSE;
 		dinfo.do_block_smoothing = FALSE;
 		dinfo.dither_mode = JDITHER_ORDERED;
+	} else if (downscale != MM_UTIL_JPEG_DECODE_DOWNSCALE_1_1) {
+		dinfo.scale_num = 1;
+		dinfo.scale_denom = (unsigned int)downscale;
+		dinfo.do_fancy_upsampling = FALSE;
+		dinfo.do_block_smoothing = FALSE;
+		dinfo.dither_mode = JDITHER_ORDERED;
 	}
 #endif
 	dinfo.dct_method = JDCT_FASTEST;
@@ -958,6 +985,16 @@ mm_image_decode_from_jpeg_file_with_libjpeg(mm_util_jpeg_yuv_data * decoded_data
 
 	/* Start decompressor*/
 	jpeg_start_decompress(&dinfo);
+
+	/* byte-align for YUV format */
+	if (input_fmt == MM_UTIL_JPEG_FMT_YUV420 || input_fmt == MM_UTIL_JPEG_FMT_YUV422) {
+		if(dinfo.output_width% 2 != 0) {
+			dinfo.output_width = MM_JPEG_ROUND_DOWN_2(dinfo.output_width);
+		}
+		if(dinfo.output_height% 2 != 0) {
+			dinfo.output_height = MM_JPEG_ROUND_DOWN_2(dinfo.output_height);
+		}
+	}
 
 	/* JSAMPLEs per row in output buffer */
 	row_stride = dinfo.output_width * dinfo.output_components;
@@ -1039,7 +1076,7 @@ mm_image_decode_from_jpeg_file_with_libjpeg(mm_util_jpeg_yuv_data * decoded_data
 }
 
 static int
-mm_image_decode_from_jpeg_memory_with_libjpeg(mm_util_jpeg_yuv_data * decoded_data, void *src, int size, mm_util_jpeg_yuv_format input_fmt)
+mm_image_decode_from_jpeg_memory_with_libjpeg(mm_util_jpeg_yuv_data * decoded_data, void *src, int size, mm_util_jpeg_yuv_format input_fmt, mm_util_jpeg_decode_downscale downscale)
 {
 	int iErrorCode	= MM_ERROR_NONE;
 	struct jpeg_decompress_struct dinfo;
@@ -1056,6 +1093,10 @@ mm_image_decode_from_jpeg_memory_with_libjpeg(mm_util_jpeg_yuv_data * decoded_da
 		return MM_ERROR_IMAGE_FILEOPEN;
 	}
 	debug_log("infile");
+	if(decoded_data == NULL) {
+		debug_error("decoded_data");
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
 	if(decoded_data) {
 		decoded_data->data = NULL;
 	}
@@ -1099,6 +1140,12 @@ mm_image_decode_from_jpeg_memory_with_libjpeg(mm_util_jpeg_yuv_data * decoded_da
 		dinfo.do_fancy_upsampling = FALSE;
 		dinfo.do_block_smoothing = FALSE;
 		dinfo.dither_mode = JDITHER_ORDERED;
+	} else if (downscale != MM_UTIL_JPEG_DECODE_DOWNSCALE_1_1) {
+		dinfo.scale_num = 1;
+		dinfo.scale_denom = (unsigned int)downscale;
+		dinfo.do_fancy_upsampling = FALSE;
+		dinfo.do_block_smoothing = FALSE;
+		dinfo.dither_mode = JDITHER_ORDERED;
 	}
 #endif
 	dinfo.dct_method = JDCT_FASTEST;
@@ -1128,6 +1175,16 @@ mm_image_decode_from_jpeg_memory_with_libjpeg(mm_util_jpeg_yuv_data * decoded_da
 	/* Start decompressor*/
 	jpeg_start_decompress(&dinfo);
 	debug_log("jpeg_start_decompress");
+
+	/* byte-align for YUV format */
+	if (input_fmt == MM_UTIL_JPEG_FMT_YUV420 || input_fmt == MM_UTIL_JPEG_FMT_YUV422) {
+		if(dinfo.output_width% 2 != 0) {
+			dinfo.output_width = MM_JPEG_ROUND_DOWN_2(dinfo.output_width);
+		}
+		if(dinfo.output_height% 2 != 0) {
+			dinfo.output_height = MM_JPEG_ROUND_DOWN_2(dinfo.output_height);
+		}
+	}
 
 	/* JSAMPLEs per row in output buffer */
 	row_stride = dinfo.output_width * dinfo.output_components;
@@ -1267,7 +1324,7 @@ mm_util_jpeg_encode_to_file(char *filename, void* src, int width, int height, mm
 		return MM_ERROR_IMAGE_INVALID_VALUE;
 	}
 
-	if( (width < 0) || (height < 0)) {
+	if( (width <= 0) || (height <= 0)) {
 		debug_error("#ERROR# src_width || src_height value ");
 		return MM_ERROR_IMAGE_INVALID_VALUE;
 	}
@@ -1277,7 +1334,7 @@ mm_util_jpeg_encode_to_file(char *filename, void* src, int width, int height, mm
 		return MM_ERROR_IMAGE_INVALID_VALUE;
 	}
 
-	if( (quality < 0 ) || (quality>100) ) {
+	if( (quality < 1 ) || (quality>100) ) {
 		debug_error("#ERROR# quality vaule");
 		return MM_ERROR_IMAGE_INVALID_VALUE;
 	}
@@ -1321,7 +1378,7 @@ mm_util_jpeg_encode_to_memory(void **mem, int *size, void* src, int width, int h
 		return MM_ERROR_IMAGE_INVALID_VALUE;
 	}
 
-	if( (width < 0) || (height < 0)) {
+	if( (width <= 0) || (height <= 0)) {
 		debug_error("#ERROR# src_width || src_height value ");
 		return MM_ERROR_IMAGE_INVALID_VALUE;
 	}
@@ -1331,7 +1388,7 @@ mm_util_jpeg_encode_to_memory(void **mem, int *size, void* src, int width, int h
 		return MM_ERROR_IMAGE_INVALID_VALUE;
 	}
 
-	if(  (quality < 0 ) || (quality>100) ) {
+	if(  (quality < 1 ) || (quality>100) ) {
 		debug_error("#ERROR# quality vaule");
 		return MM_ERROR_IMAGE_INVALID_VALUE;
 	}
@@ -1369,6 +1426,8 @@ mm_util_decode_from_jpeg_file(mm_util_jpeg_yuv_data *decoded, char *filename, mm
 {
 	int ret = MM_ERROR_NONE;
 
+	mm_util_jpeg_decode_downscale downscale = MM_UTIL_JPEG_DECODE_DOWNSCALE_1_1;
+
 	if( !decoded || !filename) {
 		debug_error("#ERROR# decoded || filename buffer is NULL");
 		return MM_ERROR_IMAGE_INVALID_VALUE;
@@ -1385,7 +1444,11 @@ mm_util_decode_from_jpeg_file(mm_util_jpeg_yuv_data *decoded, char *filename, mm
 		fread((void *)magic, 1, 2, fp);
 		debug_log("%x %x", magic[0], magic[1]);
 		fclose(fp);
+	} else {
+		debug_error("[fp] file open [%s] \t %s", filename, strerror(errno));
+		return MM_ERROR_IMAGE_FILEOPEN;
 	}
+
 	if(magic[0] == 0xff && magic[1] == 0xd8) {
 		#if LIBJPEG_TURBO
 		debug_log("#START# LIBJPEG_TURBO");
@@ -1394,7 +1457,7 @@ mm_util_decode_from_jpeg_file(mm_util_jpeg_yuv_data *decoded, char *filename, mm
 		debug_log("#End# LIBJPEG_TURBO, Success!! ret: %d", ret);
 		#else
 		debug_log("#START# libjpeg");
-		ret = mm_image_decode_from_jpeg_file_with_libjpeg(decoded, filename, fmt);
+		ret = mm_image_decode_from_jpeg_file_with_libjpeg(decoded, filename, fmt, downscale);
 		debug_log("decoded->data: %p\t width: %d\t height:%d\t size: %d\n", decoded->data, decoded->width, decoded->height, decoded->size);
 		debug_log("#End# libjpeg, Success!! ret: %d", ret);
 		#endif
@@ -1420,6 +1483,8 @@ mm_util_decode_from_jpeg_memory(mm_util_jpeg_yuv_data* decoded, void* src, int s
 {
 	int ret = MM_ERROR_NONE;
 
+	mm_util_jpeg_decode_downscale downscale = MM_UTIL_JPEG_DECODE_DOWNSCALE_1_1;
+
 	if( !decoded || !src) {
 		debug_error("#ERROR# decoded || src buffer is NULL");
 		return MM_ERROR_IMAGE_INVALID_VALUE;
@@ -1444,10 +1509,111 @@ mm_util_decode_from_jpeg_memory(mm_util_jpeg_yuv_data* decoded, void* src, int s
 
 	#else
 	debug_log("#START# libjpeg");
-	ret = mm_image_decode_from_jpeg_memory_with_libjpeg(decoded, src, size, fmt);
+	ret = mm_image_decode_from_jpeg_memory_with_libjpeg(decoded, src, size, fmt, downscale);
 
 	debug_log("decoded->data: %p\t width: %d\t height: %d\t size: %d\n", decoded->data, decoded->width, decoded->height, decoded->size);
 	debug_log("#END# libjpeg, Success!! ret: %d", ret);
 	#endif
+	return ret;
+}
+
+EXPORT_API int
+mm_util_decode_from_jpeg_file_with_downscale(mm_util_jpeg_yuv_data *decoded, char *filename, mm_util_jpeg_yuv_format fmt, mm_util_jpeg_decode_downscale downscale)
+{
+	int ret = MM_ERROR_NONE;
+
+	if( !decoded || !filename) {
+		debug_error("#ERROR# decoded || filename buffer is NULL");
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
+
+	if( (fmt < MM_UTIL_JPEG_FMT_YUV420) || (fmt > MM_UTIL_JPEG_FMT_ARGB8888) ) {
+		debug_error("#ERROR# fmt value");
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
+
+	if( (downscale != MM_UTIL_JPEG_DECODE_DOWNSCALE_1_1) && (downscale != MM_UTIL_JPEG_DECODE_DOWNSCALE_1_2)
+		 && (downscale != MM_UTIL_JPEG_DECODE_DOWNSCALE_1_4) && (downscale != MM_UTIL_JPEG_DECODE_DOWNSCALE_1_8)) {
+		debug_error("#ERROR# fmt value");
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
+
+	FILE *fp = fopen(filename, "rb");
+	unsigned char magic[2] = {0};
+	if(fp) {
+		fread((void *)magic, 1, 2, fp);
+		debug_log("%x %x", magic[0], magic[1]);
+		fclose(fp);
+	}
+	if(magic[0] == 0xff && magic[1] == 0xd8) {
+		#if LIBJPEG_TURBO
+		debug_log("#START# LIBJPEG_TURBO");
+		ret = mm_image_decode_from_jpeg_file_with_libjpeg_turbo(decoded, filename, fmt);
+		debug_log("decoded->data: %p\t width: %d\t height: %d\t size: %d\n", decoded->data, decoded->width, decoded->height, decoded->size);
+		debug_log("#End# LIBJPEG_TURBO, Success!! ret: %d", ret);
+		#else
+		debug_log("#START# libjpeg");
+		ret = mm_image_decode_from_jpeg_file_with_libjpeg(decoded, filename, fmt, downscale);
+		debug_log("decoded->data: %p\t width: %d\t height:%d\t size: %d\n", decoded->data, decoded->width, decoded->height, decoded->size);
+		debug_log("#End# libjpeg, Success!! ret: %d", ret);
+		#endif
+	} else if(magic[0] == 0x47 && magic[1] == 0x49) {
+		debug_error("Not JPEG IMAGE - GIF");
+		ret = MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+	} else if(magic[0] == 0x89 && magic[1] == 0x50) {
+		debug_error("Not JPEG IMAGE - PNG");
+		ret = MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+	} else if(magic[0] == 0x49 && magic[1] == 0x49) {
+		debug_error("Not JPEG IMAGE - TIFF");
+		ret = MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+	} else {
+		debug_error("Not JPEG IMAGE");
+		ret = MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+	}
+
+	return ret;
+}
+
+EXPORT_API int
+mm_util_decode_from_jpeg_memory_with_downscale(mm_util_jpeg_yuv_data* decoded, void* src, int size, mm_util_jpeg_yuv_format fmt, mm_util_jpeg_decode_downscale downscale)
+{
+	int ret = MM_ERROR_NONE;
+
+	if( !decoded || !src) {
+		debug_error("#ERROR# decoded || src buffer is NULL");
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
+
+	if(size < 0) {
+		debug_error("#ERROR# size");
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
+
+	if( (fmt < MM_UTIL_JPEG_FMT_YUV420) || (fmt > MM_UTIL_JPEG_FMT_ARGB8888) ) {
+		debug_error("#ERROR# fmt value");
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
+
+	if( (downscale != MM_UTIL_JPEG_DECODE_DOWNSCALE_1_1) && (downscale != MM_UTIL_JPEG_DECODE_DOWNSCALE_1_2)
+		 && (downscale != MM_UTIL_JPEG_DECODE_DOWNSCALE_1_4) && (downscale != MM_UTIL_JPEG_DECODE_DOWNSCALE_1_8)) {
+		debug_error("#ERROR# fmt value");
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
+
+	#if LIBJPEG_TURBO
+	debug_log("#START# libjpeg");
+	ret = mm_image_decode_from_jpeg_memory_with_libjpeg_turbo(decoded, src, size, fmt);
+
+	debug_log("decoded->data: %p\t width: %d\t height: %d\t size: %d\n", decoded->data, decoded->width, decoded->height, decoded->size);
+	debug_log("#END# libjpeg, Success!! ret: %d", ret);
+
+	#else
+	debug_log("#START# libjpeg");
+	ret = mm_image_decode_from_jpeg_memory_with_libjpeg(decoded, src, size, fmt, downscale);
+
+	debug_log("decoded->data: %p\t width: %d\t height: %d\t size: %d\n", decoded->data, decoded->width, decoded->height, decoded->size);
+	debug_log("#END# libjpeg, Success!! ret: %d", ret);
+	#endif
+
 	return ret;
 }

@@ -201,7 +201,7 @@ mm_util_set_crop_area(MMHandleType MMHandle, unsigned int start_x, unsigned int 
  */
 
 int
-mm_transform_is_completed(MMHandleType MMHandle, bool *is_completed);
+mm_util_transform_is_completed(MMHandleType MMHandle, bool *is_completed);
 
 /**
  *
@@ -211,7 +211,7 @@ mm_transform_is_completed(MMHandleType MMHandle, bool *is_completed);
  * @param	completed_callback					[in]			Completed_callback
  * @param	user_param						[in]			User parameter which is received from user when callback function was set
 
- * @return 	This function returns transcode processor result value
+ * @return 	This function returns transform processor result value
  *		if the result is 0, then you can use output_Filename pointer(char** value)
  *		else if the result is -1, then do not execute when the colopsapce converter is not supported
  */

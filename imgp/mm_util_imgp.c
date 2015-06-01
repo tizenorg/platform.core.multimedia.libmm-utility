@@ -81,8 +81,8 @@ _mm_gst_can_resize_format(char* __format_label)
 	gboolean _bool = FALSE;
 	debug_log("Format label: %s",__format_label);
 	if(strcmp(__format_label, "AYUV") == 0
-		|| strcmp(__format_label, "I420") == 0  || strcmp(__format_label, "YV12") == 0
-		|| strcmp(__format_label, "RGB888") == 0  || strcmp(__format_label, "RGB565") == 0 || strcmp(__format_label, "BGR888") == 0  || strcmp(__format_label, "RGBA8888") == 0
+		|| strcmp(__format_label, "UYVY") == 0 ||strcmp(__format_label, "Y800") == 0 || strcmp(__format_label, "I420") == 0 || strcmp(__format_label, "YV12") == 0
+		|| strcmp(__format_label, "RGB888") == 0 || strcmp(__format_label, "RGB565") == 0 || strcmp(__format_label, "BGR888") == 0 || strcmp(__format_label, "RGBA8888") == 0
 		|| strcmp(__format_label, "ARGB8888") == 0 ||strcmp(__format_label, "BGRA8888") == 0 ||strcmp(__format_label, "ABGR8888") == 0 ||strcmp(__format_label, "RGBX") == 0
 		|| strcmp(__format_label, "XRGB") == 0 ||strcmp(__format_label, "BGRX") == 0 ||strcmp(__format_label, "XBGR") == 0 ||strcmp(__format_label, "Y444") == 0
 		|| strcmp(__format_label, "Y42B") == 0 ||strcmp(__format_label, "YUY2") == 0 ||strcmp(__format_label, "YUYV") == 0 ||strcmp(__format_label, "UYVY") == 0
@@ -587,9 +587,14 @@ _mm_util_handle_init(mm_util_s *handle)
 	handle->dst_format_mime = -1;
 	handle->src_buf_idx = 0;
 	handle->dst_buf_idx = 0;
+	handle->dst_rotation = MM_UTIL_ROTATION_NONE;
 
 	handle->start_x = -1;
 	handle->start_y = -1;
+	handle->src_width = 0;
+	handle->src_height = 0;
+	handle->dst_width = 0;
+	handle->dst_height = 0;
 	handle->is_completed = FALSE;
 
 	return ret;
@@ -726,23 +731,81 @@ _mm_util_mapping_mime_format_to_imgp(media_format_mimetype_e mimetype)
 	return format;
 }
 
-bool
-_mm_transform_completed_cb(media_packet_h *dst, int error, void *user_param)
+
+gpointer
+_mm_util_thread_repeate(gpointer data)
 {
-	if (!user_param) {
+	mm_util_s* handle = (mm_util_s*) data;
+	int ret = MM_ERROR_NONE;
+
+	if (!handle) {
 		debug_error("[ERROR] - handle");
+		return NULL;
+	}
+
+	media_packet_h pop_data = (media_packet_h) g_async_queue_pop(handle->queue);
+
+	if(!pop_data) {
+		debug_error("[NULL] Queue data");
+	} else {
+		ret = _mm_util_transform_exec(handle, pop_data); /* Need to block */
+		if(ret == MM_ERROR_NONE) {
+			debug_log("Success - transform_exec");
+		} else{
+			debug_error("Error - transform_exec");
+		}
+		if(handle->_util_cb->completed_cb) {
+			debug_log("completed_cb");
+			handle->_util_cb->completed_cb(&handle->dst_packet, ret, handle->_util_cb->user_data);
+			debug_log("completed_cb %p", &handle->dst);
+		}
+	}
+
+	g_cond_signal(handle->thread_cond);
+	debug_log("===> send completed signal");
+	g_mutex_unlock (handle->thread_mutex);
+	debug_log("exit thread");
+
+	return NULL;
+}
+
+int
+_mm_util_create_thread(mm_util_s *handle)
+{
+	int ret = MM_ERROR_NONE;
+
+	if (!handle) {
+		debug_error("[ERROR] - handle");
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
+
+	if(!handle->thread_mutex) {
+		handle->thread_mutex = g_mutex_new();
+	} else {
+		debug_error("ERROR - thread_mutex is already created");
+	}
+
+	/*These are a communicator for thread*/
+	if(!handle->queue) {
+		handle->queue = g_async_queue_new();
+	} else {
+		debug_error("ERROR - async queue is already created");
+	}
+
+	if(!handle->thread_cond) {
+		handle->thread_cond = g_cond_new();
+	} else {
+		debug_error("thread cond is already created");
+	}
+
+	/*create threads*/
+	handle->thread = g_thread_new("transform_thread", (GThreadFunc)_mm_util_thread_repeate, (gpointer)handle);
+	if(!handle->thread) {
+		debug_error("ERROR - create thread");
 		return MM_ERROR_IMAGE_INTERNAL;
 	}
 
-	mm_util_s * handle = (mm_util_s *)user_param;
-	if(error == MM_ERROR_NONE) {
-		handle->is_completed = TRUE;
-		debug_log("completed");
-	} else {
-		debug_error("[ERROR] complete cb");
-	}
-
-	return TRUE;
+	return ret;
 }
 
 int _mm_util_processing(mm_util_s *handle)
@@ -787,8 +850,8 @@ int _mm_util_processing(mm_util_s *handle)
 	debug_log("src: %p, dst: %p", handle->src, handle->dst);
 
 	if(handle->src_format == handle->dst_format) {
-		if((handle->src_width == handle->dst_width) && (handle->src_height == handle->dst_height)) {
-			if(handle->dst_rotation !=MM_UTIL_ROTATION_NONE) {
+		if(handle->start_x == -1 && handle->start_y == -1) {
+			if(handle->dst_rotation != MM_UTIL_ROTATION_NONE) {
 				ret = mm_util_rotate_image(handle->src, handle->src_width, handle->src_height,handle->src_format, handle->dst, &handle->dst_width, &handle->dst_height, handle->dst_rotation);
 				if (ret != MM_ERROR_NONE) {
 					IMGP_FREE(handle->src);
@@ -797,15 +860,19 @@ int _mm_util_processing(mm_util_s *handle)
 					return MM_ERROR_IMAGE_INTERNAL;
 				}
 			} else {
-				IMGP_FREE(handle->src);
-				IMGP_FREE(handle->dst);
-				debug_error("[Error] rotate info");
-				return MM_ERROR_IMAGE_INVALID_VALUE;
+				ret = mm_util_resize_image(handle->src, handle->src_width, handle->src_height,handle->src_format, handle->dst, &handle->dst_width, &handle->dst_height);
+				if (ret != MM_ERROR_NONE) {
+					debug_error("mm_util_resize_image failed");
+					return MM_ERROR_IMAGE_INTERNAL;
+				}
 			}
 		} else {
-			ret = mm_util_resize_image(handle->src, handle->src_width, handle->src_height,handle->src_format, handle->dst, &handle->dst_width, &handle->dst_height);
+			ret = mm_util_crop_image(handle->src, handle->src_width, handle->src_height, handle->src_format,
+			handle->start_x, handle->start_y, &handle->dst_width, &handle->dst_height, handle->dst);
 			if (ret != MM_ERROR_NONE) {
-				debug_error("mm_util_resize_image failed");
+				IMGP_FREE(handle->src);
+				IMGP_FREE(handle->dst);
+				debug_error("mm_util_crop_image failed");
 				return MM_ERROR_IMAGE_INTERNAL;
 			}
 		}
@@ -813,15 +880,6 @@ int _mm_util_processing(mm_util_s *handle)
 		if((handle->src_width == handle->dst_width) && (handle->src_height == handle->dst_height)) {
 			if(handle->start_x == -1 && handle->start_y == -1) {
 				ret = mm_util_convert_colorspace(handle->src, handle->src_width, handle->src_height,handle->src_format, handle->dst, handle->dst_format);
-				if (ret != MM_ERROR_NONE) {
-					IMGP_FREE(handle->src);
-					IMGP_FREE(handle->dst);
-					debug_error("mm_util_convert_colorspace failed");
-					return MM_ERROR_IMAGE_INTERNAL;
-				}
-			} else {
-				ret = mm_util_crop_image(handle->src, handle->src_width, handle->src_height, handle->src_format,
-				handle->start_x, handle->start_y, &handle->dst_width, &handle->dst_height, handle->dst);
 				if (ret != MM_ERROR_NONE) {
 					IMGP_FREE(handle->src);
 					IMGP_FREE(handle->dst);
@@ -837,7 +895,144 @@ int _mm_util_processing(mm_util_s *handle)
 		}
 	}
 
-	debug_log("End processing");
+	return ret;
+}
+
+int
+_mm_util_transform_exec(mm_util_s * handle, media_packet_h src_packet)
+{
+	int ret = MM_ERROR_NONE;
+	media_format_h src_fmt;
+	media_format_h dst_fmt;
+	media_format_mimetype_e src_mimetype;
+	int src_width, src_height, src_avg_bps, src_max_bps;
+	uint64_t size = 0;
+
+	g_mutex_lock (handle->thread_mutex);
+
+	if(media_packet_get_format(src_packet, &src_fmt) != MM_ERROR_NONE) {
+		debug_error("Imedia_packet_get_format)");
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
+
+	if(media_format_get_video_info(src_fmt, &src_mimetype, &src_width, &src_height, &src_avg_bps, &src_max_bps) == MEDIA_FORMAT_ERROR_NONE) {
+		debug_log("[Fotmat: %d] W x H : %d x %d", src_mimetype, src_width, src_height);
+	}
+
+	if(_mm_util_check_resolution(src_width, src_height)) {
+		/* src */
+		handle->src_packet = src_packet;
+		debug_log("src_packet: %p handle->src_packet: %p 0x%2x [W X H] %d X %d", src_packet, handle->src_packet, src_fmt, src_width, src_height);
+		if(handle->src_packet) {
+			handle->src_format = _mm_util_mapping_mime_format_to_imgp(src_mimetype);
+			handle->src_width = src_width;
+			handle->src_height = src_height;
+		} else {
+			debug_error("[Error] handle->src");
+			return MM_ERROR_IMAGEHANDLE_NOT_INITIALIZED;
+		}
+
+		if(media_packet_get_buffer_size(handle->src_packet, &size) == MM_ERROR_NONE) {
+			handle->src_buf_size = (guint)size;
+			debug_log("src buffer(%p) %d size: %d", handle->src_packet, handle->src_packet, handle->src_buf_size);
+		} else {
+			debug_error("Error buffer size");
+		}
+
+		if(handle->dst_format == -1) {
+			handle->dst_format = handle->src_format;
+			handle->dst_format_mime = src_mimetype;
+		}
+
+		debug_log("src: %p handle->src_packet: %p (%d),(%d X %d)", src_packet, handle->src_packet, handle->src_packet, handle->src_width, handle->src_height);
+		if(handle->dst_width ==0 && handle->dst_height ==0) {
+			switch(handle->dst_rotation) {
+				case  MM_UTIL_ROTATION_90:
+				case MM_UTIL_ROTATION_270:
+					handle->dst_width  = handle->src_height;
+					handle->dst_height = handle->src_width;
+					break;
+				case MM_UTIL_ROTATION_NONE:
+				case MM_UTIL_ROTATION_180:
+				case MM_UTIL_ROTATION_FLIP_HORZ:
+				case MM_UTIL_ROTATION_FLIP_VERT:
+					handle->dst_width  = handle->src_width;
+					handle->dst_height = handle->src_height;
+					break;
+			}
+		}
+		debug_log("dst (%d X %d)", handle->dst_width, handle->dst_height);
+		if(media_format_make_writable(src_fmt, &dst_fmt) != MEDIA_FORMAT_ERROR_NONE) {
+			media_format_unref(src_fmt);
+			debug_error("[Error] Writable - dst format");
+			return MM_ERROR_IMAGE_INVALID_VALUE;
+		}
+
+		if(media_format_set_video_mime(dst_fmt, handle->dst_format_mime) != MEDIA_FORMAT_ERROR_NONE) {
+			media_format_unref(src_fmt);
+			media_format_unref(dst_fmt);
+			debug_error("[Error] Set - video mime");
+			return MM_ERROR_IMAGE_INVALID_VALUE;
+		}
+
+		if(media_format_set_video_width(dst_fmt, handle->dst_width) != MEDIA_FORMAT_ERROR_NONE) {
+			media_format_unref(src_fmt);
+			media_format_unref(dst_fmt);
+			debug_error("[Error] Set - video width");
+			return MM_ERROR_IMAGE_INVALID_VALUE;
+		}
+
+		if(media_format_set_video_height(dst_fmt, handle->dst_height) != MEDIA_FORMAT_ERROR_NONE) {
+			media_format_unref(src_fmt);
+			media_format_unref(dst_fmt);
+			debug_error("[Error] Set - video height");
+			return MM_ERROR_IMAGE_INVALID_VALUE;
+		}
+
+		if(media_format_set_video_avg_bps(dst_fmt, src_avg_bps) != MEDIA_FORMAT_ERROR_NONE) {
+			media_format_unref(src_fmt);
+			media_format_unref(dst_fmt);
+			debug_error("[Error] Set - video avg bps");
+			return MM_ERROR_IMAGE_INVALID_VALUE;
+		}
+
+		if(media_format_set_video_max_bps(dst_fmt, src_max_bps) != MEDIA_FORMAT_ERROR_NONE) {
+			media_format_unref(src_fmt);
+			media_format_unref(dst_fmt);
+			debug_error("[Error] Set - video max bps");
+			return MM_ERROR_IMAGE_INVALID_VALUE;
+		}
+
+		if(media_packet_create_alloc(dst_fmt, (media_packet_finalize_cb)NULL, NULL, &handle->dst_packet) != MM_ERROR_NONE) {
+			debug_error("Imedia_packet_get_format)");
+			return MM_ERROR_IMAGE_INVALID_VALUE;
+		} else {
+			debug_log("Success - dst media packet");
+			if(media_packet_get_buffer_size(handle->dst_packet, &size) != MM_ERROR_NONE) {
+				debug_error("Imedia_packet_get_format)");
+				return MM_ERROR_IMAGE_INVALID_VALUE;
+			}
+			handle->dst_buf_size = (guint)size;
+			debug_log("handle->src_packet: %p [%d] %d X %d (%d) => handle->dst_packet: %p [%d] %d X %d (%d)",
+				handle->src_packet, handle->src_format, handle->src_width, handle->src_height, handle->src_buf_size,
+				handle->dst_packet, handle->dst_format,handle->dst_width, handle->dst_height, handle->dst_buf_size);
+		}
+	}else {
+		debug_error("%d %d", src_width, src_height);
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
+
+	ret = _mm_util_processing(handle);
+
+	if(ret != MM_ERROR_NONE) {
+		debug_error("_mm_util_processing failed");
+		IMGP_FREE(handle);
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
+
+	media_format_unref(src_fmt);
+	media_format_unref(dst_fmt);
+
 	return ret;
 }
 
@@ -850,6 +1045,29 @@ _mm_util_handle_finalize(mm_util_s *handle)
 		debug_error("[ERROR] - handle");
 		return MM_ERROR_IMAGE_INTERNAL;
 	}
+
+	/* g_thread_exit(handle->thread); */
+	if(handle->_MMHandle) {
+		if(handle->thread) {
+			g_thread_join(handle->thread);
+		}
+	}
+
+	if(handle->queue) {
+		g_async_queue_unref(handle->queue);
+		handle->queue = NULL;
+	}
+
+	if(handle->thread_mutex) {
+		g_mutex_free (handle->thread_mutex);
+		handle->thread_mutex = NULL;
+	}
+
+	if(handle->thread_cond) {
+		g_cond_free (handle->thread_cond);
+		handle->thread_cond = NULL;
+	}
+	debug_log("Success - Finalize Handle");
 
 	return ret;
 }
@@ -864,21 +1082,30 @@ mm_util_create(MMHandleType* MMHandle)
 		return MM_ERROR_IMAGE_INVALID_VALUE;
 	}
 
-	mm_util_s *_handle = calloc(1,sizeof(mm_util_s));
-	if (!_handle) {
+	mm_util_s *handle = calloc(1,sizeof(mm_util_s));
+	if (!handle) {
 		debug_error("[ERROR] - _handle");
 		ret = MM_ERROR_IMAGE_INTERNAL;
 	}
 
-	ret = _mm_util_handle_init (_handle);
+	ret = _mm_util_handle_init (handle);
 	if(ret != MM_ERROR_NONE) {
 		debug_error("_mm_util_handle_init failed");
-		IMGP_FREE(_handle);
+		IMGP_FREE(handle);
 		return MM_ERROR_IMAGE_INVALID_VALUE;
 	}
 
-	*MMHandle = (MMHandleType)_handle;
+	ret = _mm_util_create_thread(handle);
+	if(ret != MM_ERROR_NONE) {
+		debug_error("ERROR - Create thread");
+		return ret;
+	} else {
+		debug_log("Success -_mm_util_create_thread");
+	}
 
+	*MMHandle = (MMHandleType)handle;
+
+	handle->_MMHandle = 0;
 	return ret;
 }
 
@@ -984,11 +1211,6 @@ mm_util_transform(MMHandleType MMHandle, media_packet_h src_packet, mm_util_comp
 {
 	int ret = MM_ERROR_NONE;
 	mm_util_s *handle = (mm_util_s *) MMHandle;
-	media_format_h src_fmt;
-	media_format_h dst_fmt;
-	media_format_mimetype_e src_mimetype;
-	int src_width, src_height, src_avg_bps, src_max_bps;
-	uint64_t size = 0;
 
 	if (!handle) {
 		debug_error("[ERROR] - handle");
@@ -1015,137 +1237,24 @@ mm_util_transform(MMHandleType MMHandle, media_packet_h src_packet, mm_util_comp
 		debug_error("[ERROR] _util_cb_s");
 	}
 
-	if(media_packet_get_format(src_packet, &src_fmt) != MM_ERROR_NONE) {
-		debug_error("Imedia_packet_get_format)");
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+	handle->_MMHandle++;
+
+	if(handle->queue) {
+		debug_log("g_async_queue_push");
+		g_async_queue_push (handle->queue, GINT_TO_POINTER(src_packet));
+
+		g_mutex_lock (handle->thread_mutex);
+		debug_log("waiting...");
+		g_cond_wait(handle->thread_cond, handle->thread_mutex);
+		debug_log("<=== get completed / cancel signal");
+		g_mutex_unlock (handle->thread_mutex);
 	}
-
-	if(media_format_get_video_info(src_fmt, &src_mimetype, &src_width, &src_height, &src_avg_bps, &src_max_bps) == MEDIA_FORMAT_ERROR_NONE) {
-		debug_log("[Fotmat: %d] W x H : %d x %d", src_mimetype, src_width, src_height);
-	}
-
-	if(_mm_util_check_resolution(src_width, src_height)) {
-		/* src */
-		handle->src_packet = src_packet;
-		debug_log("src_packet: %p handle->src_packet: %p 0x%2x [W X H] %d X %d", src_packet, handle->src_packet, src_fmt, src_width, src_height);
-		if(handle->src_packet) {
-			handle->src_format = _mm_util_mapping_mime_format_to_imgp(src_mimetype);
-			handle->src_width = src_width;
-			handle->src_height = src_height;
-		} else {
-			debug_error("[Error] handle->src");
-			return MM_ERROR_IMAGEHANDLE_NOT_INITIALIZED;
-		}
-
-		if(media_packet_get_buffer_size(handle->src_packet, &size) == MM_ERROR_NONE) {
-			handle->src_buf_size = (guint)size;
-			debug_log("src buffer(%p) %d size: %d", handle->src_packet, handle->src_packet, handle->src_buf_size);
-		} else {
-			debug_error("Error buffer size");
-		}
-
-		if(handle->dst_format == -1) {
-			handle->dst_format = handle->src_format;
-			handle->dst_format_mime = src_mimetype;
-		}
-
-		debug_log("src: %p handle->src_packet: %p (%d),(%d X %d)", src_packet, handle->src_packet, handle->src_packet, handle->src_width, handle->src_height);
-		if(handle->dst_width ==0 && handle->dst_height ==0) {
-			switch(handle->dst_rotation) {
-				case  MM_UTIL_ROTATION_90:
-				case MM_UTIL_ROTATION_270:
-					handle->dst_width  = handle->src_height;
-					handle->dst_height = handle->src_width;
-					break;
-				case MM_UTIL_ROTATION_NONE:
-				case MM_UTIL_ROTATION_180:
-				case MM_UTIL_ROTATION_FLIP_HORZ:
-				case MM_UTIL_ROTATION_FLIP_VERT:
-					handle->dst_width  = handle->src_width;
-					handle->dst_height = handle->src_height;
-					break;
-			}
-		}
-		debug_log("dst (%d X %d)", handle->dst_width, handle->dst_height);
-		if(media_format_make_writable(src_fmt, &dst_fmt) != MEDIA_FORMAT_ERROR_NONE) {
-			media_format_unref(src_fmt);
-			debug_error("[Error] Writable - dst format");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
-		}
-
-		if(media_format_set_video_mime(dst_fmt, handle->dst_format_mime) != MEDIA_FORMAT_ERROR_NONE) {
-			media_format_unref(src_fmt);
-			media_format_unref(dst_fmt);
-			debug_error("[Error] Set - video mime");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
-		}
-
-		if(media_format_set_video_width(dst_fmt, handle->dst_width) != MEDIA_FORMAT_ERROR_NONE) {
-			media_format_unref(src_fmt);
-			media_format_unref(dst_fmt);
-			debug_error("[Error] Set - video width");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
-		}
-
-		if(media_format_set_video_height(dst_fmt, handle->dst_height) != MEDIA_FORMAT_ERROR_NONE) {
-			media_format_unref(src_fmt);
-			media_format_unref(dst_fmt);
-			debug_error("[Error] Set - video height");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
-		}
-
-		if(media_format_set_video_avg_bps(dst_fmt, src_avg_bps) != MEDIA_FORMAT_ERROR_NONE) {
-			media_format_unref(src_fmt);
-			media_format_unref(dst_fmt);
-			debug_error("[Error] Set - video avg bps");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
-		}
-
-		if(media_format_set_video_max_bps(dst_fmt, src_max_bps) != MEDIA_FORMAT_ERROR_NONE) {
-			media_format_unref(src_fmt);
-			media_format_unref(dst_fmt);
-			debug_error("[Error] Set - video max bps");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
-		}
-		if(media_packet_create_alloc(dst_fmt, (media_packet_finalize_cb)NULL, NULL, &handle->dst_packet) != MM_ERROR_NONE) {
-			debug_error("Imedia_packet_get_format)");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
-		} else {
-			debug_log("Success - dst media packet");
-			if(media_packet_get_buffer_size(handle->dst_packet, &size) != MM_ERROR_NONE) {
-				debug_error("Imedia_packet_get_format)");
-				return MM_ERROR_IMAGE_INVALID_VALUE;
-			}
-			handle->dst_buf_size = (guint)size;
-			debug_log("handle->src_packet: %p [%d] %d X %d (%d) => handle->dst_packet: %p [%d] %d X %d (%d)",
-				handle->src_packet, handle->src_format, handle->src_width, handle->src_height, handle->src_buf_size,
-				handle->dst_packet, handle->dst_format,handle->dst_width, handle->dst_height, handle->dst_buf_size);
-		}
-	}else {
-		debug_error("%d %d", src_width, src_height);
-		return MM_ERROR_IMAGE_INVALID_VALUE;
-	}
-
-	ret = _mm_util_processing(handle);
-
-	if(ret == MM_ERROR_NONE) {
-		if(handle->_util_cb->completed_cb) {
-			debug_log("completed_cb");
-			handle->_util_cb->completed_cb(&handle->dst_packet, MM_ERROR_NONE, handle->_util_cb->user_data);
-			debug_log("completed_cb %p", &handle->dst);
-		}
-		debug_log("Success - Transform");
-	} else {
-		debug_error("Error - Transform");
-	}
-	media_format_unref(src_fmt);
-	media_format_unref(dst_fmt);
 
 	return ret;
 }
 
 int
-mm_transform_is_completed(MMHandleType MMHandle, bool *is_completed)
+mm_util_transform_is_completed(MMHandleType MMHandle, bool *is_completed)
 {
 	int ret = MM_ERROR_NONE;
 
@@ -1297,6 +1406,11 @@ mm_util_resize_image(unsigned char *src, unsigned int src_width, unsigned int sr
 		return MM_ERROR_IMAGE_INVALID_VALUE;
 	}
 
+	if( !src_width || !src_height) {
+		debug_error("#ERROR# src_width || src_height valuei is 0 ");
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
+
 	debug_log("[src] 0x%2x (%d x %d) [dst] 0x%2x", src, src_width, src_height, dst);
 
 	imgp_info_s* _imgp_info_s=(imgp_info_s*)g_malloc0(sizeof(imgp_info_s));
@@ -1393,6 +1507,11 @@ mm_util_rotate_image(unsigned char *src, unsigned int src_width, unsigned int sr
 
 	if( !dst_width || !dst_height ) {
 		debug_error("#ERROR# dst width/height buffer is NUL");
+		return MM_ERROR_IMAGE_INVALID_VALUE;
+	}
+
+	if( !src_width || !src_height) {
+		debug_error("#ERROR# src_width || src_height value is 0 ");
 		return MM_ERROR_IMAGE_INVALID_VALUE;
 	}
 

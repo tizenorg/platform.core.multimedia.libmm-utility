@@ -24,6 +24,7 @@
 #define ONE_ALL 0
 #define IMAGE_FORMAT_LABEL_BUFFER_SIZE 4
 MMHandleType MMHandle = 0;
+bool completed = false;
 
 bool
 transform_completed_cb(media_packet_h *packet, int error, void *user_param)
@@ -35,56 +36,61 @@ transform_completed_cb(media_packet_h *packet, int error, void *user_param)
 	media_format_h dst_fmt;
 	media_format_mimetype_e dst_mimetype;
 	int dst_width, dst_height, dst_avg_bps, dst_max_bps;
-	char *output_fmt = (char*)malloc(sizeof(char) * IMAGE_FORMAT_LABEL_BUFFER_SIZE);
-	if(output_fmt) {
-		if(media_packet_get_format(*packet, &dst_fmt) != MM_ERROR_NONE) {
-			debug_error("Imedia_packet_get_format");
-			IMGP_FREE(output_fmt);
-			return MM_ERROR_IMAGE_INVALID_VALUE;
-		}
-
-		if(media_format_get_video_info(dst_fmt, &dst_mimetype, &dst_width, &dst_height, &dst_avg_bps, &dst_max_bps) ==MEDIA_FORMAT_ERROR_NONE) {
-			memset(output_fmt, 0, IMAGE_FORMAT_LABEL_BUFFER_SIZE);
-			if(dst_mimetype  ==MEDIA_FORMAT_YV12 || dst_mimetype == MEDIA_FORMAT_422P ||dst_mimetype == MEDIA_FORMAT_I420
-				|| dst_mimetype == MEDIA_FORMAT_NV12 || dst_mimetype == MEDIA_FORMAT_UYVY ||dst_mimetype == MEDIA_FORMAT_YUYV) {
-				strncpy(output_fmt, "yuv", strlen("yuv"));
-			} else {
-				strncpy(output_fmt,"rgb", strlen("rgb"));
-			}
-			debug_log("[mimetype: %d] W x H : %d x %d", dst_mimetype, dst_width, dst_height);
-			sprintf(output_file, "result_%dx%d.%s", dst_width,dst_height, output_fmt);
-		}
-	}
+	char *output_fmt = NULL;
 
 	if(error == MM_ERROR_NONE) {
 		debug_log("completed");
+		output_fmt = (char*)malloc(sizeof(char) * IMAGE_FORMAT_LABEL_BUFFER_SIZE);
+		if(output_fmt) {
+			if(media_packet_get_format(*packet, &dst_fmt) != MM_ERROR_NONE) {
+				debug_error("Imedia_packet_get_format");
+				return FALSE;
+			}
+
+			if(media_format_get_video_info(dst_fmt, &dst_mimetype, &dst_width, &dst_height, &dst_avg_bps, &dst_max_bps) ==MEDIA_FORMAT_ERROR_NONE) {
+				memset(output_fmt, 0, IMAGE_FORMAT_LABEL_BUFFER_SIZE);
+				if(dst_mimetype  ==MEDIA_FORMAT_YV12 || dst_mimetype == MEDIA_FORMAT_422P ||dst_mimetype == MEDIA_FORMAT_I420
+					|| dst_mimetype == MEDIA_FORMAT_NV12 || dst_mimetype == MEDIA_FORMAT_UYVY ||dst_mimetype == MEDIA_FORMAT_YUYV) {
+					strncpy(output_fmt, "yuv", strlen("yuv"));
+				} else {
+					strncpy(output_fmt,"rgb", strlen("rgb"));
+				}
+				debug_log("[mimetype: %d] W x H : %d x %d", dst_mimetype, dst_width, dst_height);
+				snprintf(output_file, 25, "result_%dx%d.%s", dst_width,dst_height, output_fmt);
+			}
+		}
+
+		FILE *fpout = fopen(output_file, "w");
+		if(fpout) {
+			media_packet_get_buffer_size(*packet, &size);
+			void *dst = NULL;
+			if(media_packet_get_buffer_data_ptr(*packet, &dst) != MM_ERROR_NONE) {
+				IMGP_FREE(dst);
+				IMGP_FREE(output_fmt);
+				fclose(fpout);
+				debug_error ("[dst] media_packet_get_extra");
+				return FALSE;
+			}
+			debug_log("dst: %p [%d]", dst, size);
+			fwrite(dst, 1, size, fpout);
+			debug_log("FREE");
+			fclose(fpout);
+		}
+
+		debug_log("write result");
+		debug_log("Free (output_fmt)");
+		IMGP_FREE(output_fmt);
 	} else {
 		debug_error("[ERROR] complete cb");
 		GThread * destroy_thread = g_thread_new(NULL, mm_util_destroy, MMHandle);
+		return_val_if_fail(destroy_thread, FALSE);
 		g_thread_unref(destroy_thread);
 	}
 
-	FILE *fpout = fopen(output_file, "w");
-	if(fpout) {
-		media_packet_get_buffer_size(*packet, &size);
-		void *dst = NULL;
-		if(media_packet_get_buffer_data_ptr(*packet, &dst) != MM_ERROR_NONE) {
-			IMGP_FREE(dst);
-			IMGP_FREE(output_fmt);
-			fclose(fpout);
-			debug_error ("[dst] media_packet_get_extra");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
-		}
-		debug_log("dst: %p [%d]", dst, size);
-		fwrite(dst, 1, size, fpout);
-		debug_log("FREE");
-		fclose(fpout);
-	}
-
-	debug_log("write result");
-	debug_log("Free (output_fmt)");
+	completed = true;
+	debug_log("Destory - dst packet");
 	media_packet_destroy(*packet);
-	IMGP_FREE(output_fmt);
+
 	return TRUE;
 }
 
@@ -98,9 +104,8 @@ int main(int argc, char *argv[])
 
 	if (argc < 1) {
 		debug_error("[%s][%05d] Usage: ./mm_image_testsuite filename [yuv420 | yuv420p | yuv422 | uyvy | vyuy | nv12 | nv12t | rgb565 | rgb888 | argb | jpeg] width height\n");
-		exit (0);
+		return ret;
 	}
-
 
 	/* Create Transform */
 	ret = mm_util_create (&MMHandle);
@@ -151,15 +156,27 @@ int main(int argc, char *argv[])
 		debug_error("media_format_create failed...");
 	}
 
-	ret = media_packet_create_alloc(fmt, (media_packet_finalize_cb)transform_completed_cb, NULL, &src_packet);
+	ret = media_packet_create_alloc(fmt, (media_packet_finalize_cb)NULL, NULL, &src_packet);
 	if(ret == MM_ERROR_NONE) {
 		debug_log("Success - Create Media Packet(%p)", src_packet);
 		uint64_t size =0;
 		if (media_packet_get_buffer_size(src_packet, &size) == MEDIA_PACKET_ERROR_NONE) {
 			ptr = malloc(size);
+			if (ptr == NULL) {
+				debug_log("\tmemory allocation failed\n");
+				return MM_ERROR_IMAGE_INTERNAL;
+			}
 			if (media_packet_get_buffer_data_ptr(src_packet, &ptr) == MEDIA_PACKET_ERROR_NONE) {
 				FILE *fp = fopen(argv[1], "r");
+				if (fp == NULL) {
+					debug_log("\tfile open failed %d\n", errno);
+					return MM_ERROR_IMAGE_INTERNAL;
+				}
 				src = malloc(size);
+				if (src == NULL) {
+					debug_log("\tmemory allocation failed\n");
+					return MM_ERROR_IMAGE_INTERNAL;
+				}
 				if(fread(src, 1, (int)size, fp)) {
 					debug_log("#Success# fread");
 					memcpy(ptr, src, (int)size);
@@ -183,21 +200,12 @@ int main(int argc, char *argv[])
 		return ret;
 	}
 
-	ret = mm_util_set_colorspace_convert(MMHandle, MM_UTIL_IMG_FMT_RGB888);
+	ret = mm_util_set_resolution(MMHandle, 176, 144);
 	if(ret == MM_ERROR_NONE) {
 		debug_log("Success - Set Convert Info");
 	} else {
 		media_format_unref(fmt);
 		debug_log("ERROR - Set Convert Info");
-		return ret;
-	}
-
-	ret = mm_util_set_resolution(MMHandle, 320, 240);
-	if(ret == MM_ERROR_NONE) {
-		debug_log("Success - Set Resize Info");
-	} else {
-		media_format_unref(fmt);
-		debug_log("ERROR - Set Resize Info");
 		return ret;
 	}
 
@@ -212,9 +220,20 @@ int main(int argc, char *argv[])
 	}
 
 	debug_log("Wait...");
+	while (false == completed) {} // polling
 
-	media_packet_destroy(src_packet);
+	ret = mm_util_destroy(MMHandle);
+	if(ret == MM_ERROR_NONE) {
+		debug_log("Success - Destroy");
+	} else {
+		media_format_unref(fmt);
+		debug_error("ERROR - Destroy");
+		return ret;
+	}
+
 	media_format_unref(fmt);
+	debug_log("Destory - src packet");
+	media_packet_destroy(src_packet);
 	debug_log("destroy");
 
 	return ret;

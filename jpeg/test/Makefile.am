@@ -4,7 +4,7 @@ mm_util_jpeg_testsuite_SOURCES = mm_util_jpeg_testsuite.c
 
 mm_util_jpeg_testsuite_CFLAGS = -I$(srcdir)/../include
 mm_util_jpeg_testsuite_CFLAGS += $(MMCOMMON_CFLAGS) \
-				 $(MMLOG_CFLAGS) -DMMF_LOG_OWNER=0x0100 -DMMF_DEBUG_PREFIX=\"MMF-IMAGE\" \
+				 $(MMLOG_CFLAGS) -DMMF_LOG_OWNER=0x0100 -DMMF_DEBUG_PREFIX=\"MMF-IMAGE\" -fPIE -pie \
 				 $(TZ_PLATFORM_CONFIG_FLAGS)
 
 
