@@ -249,7 +249,7 @@ mm_util_destroy(MMHandleType MMHandle);
  * @since       R1, 1.0
  */
 int
-mm_util_convert_colorspace(unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
+mm_util_convert_colorspace(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
                            unsigned char *dst, mm_util_img_format dst_format);
 
 
@@ -270,7 +270,7 @@ mm_util_convert_colorspace(unsigned char *src, unsigned int src_width, unsigned 
  * @since       R1, 1.0
  */
 int
-mm_util_resize_image(unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
+mm_util_resize_image(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
                      unsigned char *dst, unsigned int *dst_width, unsigned int *dst_height);
 
 
@@ -292,7 +292,7 @@ mm_util_resize_image(unsigned char *src, unsigned int src_width, unsigned int sr
  * @since       R1, 1.0
  */
 int
-mm_util_rotate_image(unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
+mm_util_rotate_image(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
                      unsigned char *dst, unsigned int *dst_width, unsigned int *dst_height, mm_util_img_rotate_type angle);
 
 /**
@@ -315,7 +315,7 @@ mm_util_rotate_image(unsigned char *src, unsigned int src_width, unsigned int sr
  * @since       R1, 1.0
  */
 int
-mm_util_crop_image(unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
+mm_util_crop_image(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
                      unsigned int crop_start_x, unsigned int crop_start_y, unsigned int *crop_dest_width, unsigned int *crop_dest_height, unsigned char *dst);
 
 #ifdef __cplusplus

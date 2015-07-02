@@ -34,7 +34,7 @@ libmmutil_imgp_la_LIBADD = $(MMCOMMON_LIBS) \
                            $(TBM_LIBS) \
                            $(MMLOG_LIBS)
 
-libmmutil_imgp_la_CFLAGS += -lcapi-media-tool $(MMLOG_CFLAGS) -DMMF_LOG_OWNER=0x0100 -DMMF_DEBUG_PREFIX=\"MMF-IMAGE\" -DLIBPREFIX=\"$(libdir)\"
+libmmutil_imgp_la_CFLAGS += -lcapi-media-tool -lttrace $(MMLOG_CFLAGS) -DMMF_LOG_OWNER=0x0100 -DMMF_DEBUG_PREFIX=\"MMF-IMAGE\" -DLIBPREFIX=\"$(libdir)\"
 
 pcfiles = mmutil-imgp.pc
 pkgconfigdir = $(libdir)/pkgconfig

@@ -26,6 +26,13 @@
 MMHandleType MMHandle = 0;
 bool completed = false;
 
+
+int packet_finalize_callback(media_packet_h packet, int err, void* userdata)
+{
+	debug_log("==> finalize callback func is called [%d] \n", err);
+	return MEDIA_PACKET_FINALIZE;
+}
+
 bool
 transform_completed_cb(media_packet_h *packet, int error, void *user_param)
 {
@@ -156,7 +163,7 @@ int main(int argc, char *argv[])
 		debug_error("media_format_create failed...");
 	}
 
-	ret = media_packet_create_alloc(fmt, (media_packet_finalize_cb)NULL, NULL, &src_packet);
+	ret = media_packet_create_alloc(fmt, (media_packet_finalize_cb)packet_finalize_callback, NULL, &src_packet);
 	if(ret == MM_ERROR_NONE) {
 		debug_log("Success - Create Media Packet(%p)", src_packet);
 		uint64_t size =0;

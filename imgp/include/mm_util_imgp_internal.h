@@ -157,6 +157,7 @@ typedef struct
 	bool hardware_acceleration;
 	mm_util_cb_s *_util_cb;
 	bool is_completed;
+	bool is_finish;
 
 	tbm_bufmgr tbm;
 	tbm_bo src_bo;
@@ -175,8 +176,6 @@ typedef struct
 	guint src_buf_size; /**< for a standard colorspace format */
 	/* Dst paramters */
 	guint dst_buf_size;
-
-	/* Properties */
 
 	/* DRM/GEM information */
 	guint src_buf_idx;
