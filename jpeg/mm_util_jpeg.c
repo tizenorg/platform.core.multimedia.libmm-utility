@@ -245,9 +245,9 @@ _mm_decode_libjpeg_turbo_decompress(tjhandle handle, unsigned char *jpegBuf, uns
 }
 
 static int
-mm_image_decode_from_jpeg_file_with_libjpeg_turbo(mm_util_jpeg_yuv_data * decoded_data, char *pFileName, mm_util_jpeg_yuv_format input_fmt)
+mm_image_decode_from_jpeg_file_with_libjpeg_turbo(mm_util_jpeg_yuv_data * decoded_data, const char *pFileName, mm_util_jpeg_yuv_format input_fmt)
 {
-	int iErrorCode	= MM_ERROR_NONE;
+	int iErrorCode = MM_ERROR_NONE;
 	tjhandle dhandle=NULL;
 	unsigned char *srcBuf=NULL;
 	int jpegSize;
@@ -295,7 +295,7 @@ mm_image_decode_from_jpeg_file_with_libjpeg_turbo(mm_util_jpeg_yuv_data * decode
 static int
 mm_image_decode_from_jpeg_memory_with_libjpeg_turbo(mm_util_jpeg_yuv_data * decoded_data, void *src, int size, mm_util_jpeg_yuv_format input_fmt)
 {
-	int iErrorCode	= MM_ERROR_NONE;
+	int iErrorCode = MM_ERROR_NONE;
 	tjhandle dhandle=NULL;
 	unsigned char *srcBuf=NULL;
 	int TD_BU=0;
@@ -376,7 +376,7 @@ _mm_encode_libjpeg_turbo_compress(tjhandle handle, void *src, unsigned char **ds
 static int
 mm_image_encode_to_jpeg_file_with_libjpeg_turbo(char *filename, void* src, int width, int height, mm_util_jpeg_yuv_format fmt, int quality)
 {
-	int iErrorCode	= MM_ERROR_NONE;
+	int iErrorCode = MM_ERROR_NONE;
 	tjhandle chandle=NULL;
 	unsigned char *dstBuf=NULL;
 	unsigned long size=0;
@@ -419,7 +419,7 @@ mm_image_encode_to_jpeg_file_with_libjpeg_turbo(char *filename, void* src, int w
 static int
 mm_image_encode_to_jpeg_memory_with_libjpeg_turbo(void **mem, int *csize, void *rawdata,  int w, int h, mm_util_jpeg_yuv_format fmt,int quality)
 {
-	int iErrorCode	= MM_ERROR_NONE;
+	int iErrorCode = MM_ERROR_NONE;
 	tjhandle chandle=NULL;
 	int TD_BU=0;
 
@@ -495,8 +495,7 @@ my_error_exit (j_common_ptr cinfo)
 	longjmp(myerr->setjmp_buffer, 1); /*  Return control to the setjmp point */
 }
 
-static int
-mm_image_encode_to_jpeg_file_with_libjpeg(char *pFileName, void *rawdata, int width, int height, mm_util_jpeg_yuv_format fmt, int quality)
+static int mm_image_encode_to_jpeg_file_with_libjpeg(const char *pFileName, void *rawdata, int width, int height, mm_util_jpeg_yuv_format fmt, int quality)
 {
 	int iErrorCode = MM_ERROR_NONE;
 
@@ -671,8 +670,10 @@ mm_image_encode_to_jpeg_file_with_libjpeg(char *pFileName, void *rawdata, int wi
 			iRowStride = width * 4;
 		}
 
+		JSAMPLE *image_buffer = (JSAMPLE *)rawdata;
 		while (cinfo.next_scanline < cinfo.image_height) {
-			row_pointer[0] = (JSAMPROW)&rawdata[cinfo.next_scanline * iRowStride];
+			//row_pointer[0] = (JSAMPROW)&rawdata[cinfo.next_scanline * iRowStride];
+			row_pointer[0] = & image_buffer[cinfo.next_scanline * iRowStride];
 			jpeg_write_scanlines(&cinfo, row_pointer, 1);
 		}
 		debug_log("while");
@@ -685,7 +686,7 @@ mm_image_encode_to_jpeg_file_with_libjpeg(char *pFileName, void *rawdata, int wi
 		debug_error("We can't encode the IMAGE format");
 		return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
 	}
-	fsync((int)fpWriter);
+	fsync((int)(fpWriter->_fileno));
 	debug_log("[fsync] FILE");
 	fclose(fpWriter);
 	return iErrorCode;
@@ -694,7 +695,7 @@ mm_image_encode_to_jpeg_file_with_libjpeg(char *pFileName, void *rawdata, int wi
 static int
 mm_image_encode_to_jpeg_memory_with_libjpeg(void **mem, int *csize, void *rawdata, int width, int height, mm_util_jpeg_yuv_format fmt,int quality)
 {
-	int iErrorCode	= MM_ERROR_NONE;
+	int iErrorCode = MM_ERROR_NONE;
 
 	JSAMPROW y[16],cb[16],cr[16]; /*  y[2][5] = color sample of row 2 and pixel column 5; (one plane) */
 	JSAMPARRAY data[3]; /*  t[0][2][5] = color sample 0 of row 2 and column 5 */
@@ -869,8 +870,10 @@ mm_image_encode_to_jpeg_memory_with_libjpeg(void **mem, int *csize, void *rawdat
 			iRowStride = width * 4;
 		}
 
+		JSAMPLE *image_buffer = (JSAMPLE *)rawdata;
 		while (cinfo.next_scanline < cinfo.image_height) {
-			row_pointer[0] = (JSAMPROW)&rawdata[cinfo.next_scanline * iRowStride];
+			//row_pointer[0] = (JSAMPROW)&rawdata[cinfo.next_scanline * iRowStride];
+			row_pointer[0] = & image_buffer[cinfo.next_scanline * iRowStride];
 			jpeg_write_scanlines(&cinfo, row_pointer, 1);
 		}
 		debug_log("while");
@@ -889,14 +892,14 @@ mm_image_encode_to_jpeg_memory_with_libjpeg(void **mem, int *csize, void *rawdat
 }
 
 static int
-mm_image_decode_from_jpeg_file_with_libjpeg(mm_util_jpeg_yuv_data * decoded_data, char *pFileName, mm_util_jpeg_yuv_format input_fmt, mm_util_jpeg_decode_downscale downscale)
+mm_image_decode_from_jpeg_file_with_libjpeg(mm_util_jpeg_yuv_data * decoded_data, const char *pFileName, mm_util_jpeg_yuv_format input_fmt, mm_util_jpeg_decode_downscale downscale)
 {
-	int iErrorCode	= MM_ERROR_NONE;
-	FILE *infile		= NULL;
+	int iErrorCode = MM_ERROR_NONE;
+	FILE *infile = NULL;
 	struct jpeg_decompress_struct dinfo;
 	struct my_error_mgr_s jerr;
 	JSAMPARRAY buffer; /* Output row buffer */
-	int row_stride = 0, state = 0; /* physical row width in output buffer */
+	int row_stride = 0; /* physical row width in output buffer */
 	JSAMPROW image, u_image, v_image;
 	JSAMPROW row; /* point to buffer[0] */
 
@@ -1063,6 +1066,7 @@ mm_image_decode_from_jpeg_file_with_libjpeg(mm_util_jpeg_yuv_data * decoded_data
 			}
 		}
 	}else if(input_fmt == MM_UTIL_JPEG_FMT_RGB888 ||input_fmt == MM_UTIL_JPEG_FMT_GraySacle || input_fmt == MM_UTIL_JPEG_FMT_RGB888 || input_fmt == MM_UTIL_JPEG_FMT_RGBA8888 || input_fmt == MM_UTIL_JPEG_FMT_BGRA8888 || input_fmt == MM_UTIL_JPEG_FMT_ARGB8888) {
+		int state = 0;
 		/* while (scan lines remain to be read) jpeg_read_scanlines(...); */
 		while (dinfo.output_scanline < dinfo.output_height) {
 			/* jpeg_read_scanlines expects an array of pointers to scanlines. Here the array is only one element long, but you could ask formore than one scanline at a time if that's more convenient. */
@@ -1088,11 +1092,11 @@ mm_image_decode_from_jpeg_file_with_libjpeg(mm_util_jpeg_yuv_data * decoded_data
 static int
 mm_image_decode_from_jpeg_memory_with_libjpeg(mm_util_jpeg_yuv_data * decoded_data, void *src, int size, mm_util_jpeg_yuv_format input_fmt, mm_util_jpeg_decode_downscale downscale)
 {
-	int iErrorCode	= MM_ERROR_NONE;
+	int iErrorCode = MM_ERROR_NONE;
 	struct jpeg_decompress_struct dinfo;
 	struct my_error_mgr_s jerr;
 	JSAMPARRAY buffer; /* Output row buffer */
-	int row_stride = 0, state = 0; /* physical row width in output buffer */
+	int row_stride = 0; /* physical row width in output buffer */
 	JSAMPROW image, u_image, v_image;
 	JSAMPROW row; /* point to buffer[0] */
 
@@ -1252,6 +1256,7 @@ mm_image_decode_from_jpeg_memory_with_libjpeg(mm_util_jpeg_yuv_data * decoded_da
 			}
 		}
 	} else if(input_fmt == MM_UTIL_JPEG_FMT_RGB888 ||input_fmt == MM_UTIL_JPEG_FMT_GraySacle || input_fmt == MM_UTIL_JPEG_FMT_RGB888 || input_fmt == MM_UTIL_JPEG_FMT_RGBA8888 || input_fmt == MM_UTIL_JPEG_FMT_BGRA8888 || input_fmt == MM_UTIL_JPEG_FMT_ARGB8888) {
+		int state = 0;
 		while (dinfo.output_scanline < dinfo.output_height) {
 			/* jpeg_read_scanlines expects an array of pointers to scanlines. Here the array is only one element long, but you could ask formore than one scanline at a time if that's more convenient. */
 			jpeg_read_scanlines(&dinfo, buffer, 1);
@@ -1260,7 +1265,6 @@ mm_image_decode_from_jpeg_memory_with_libjpeg(mm_util_jpeg_yuv_data * decoded_da
 			state += row_stride;
 		}
 		debug_log("jpeg_read_scanlines");
-
 	}
 
 	/* Finish decompression */
@@ -1276,6 +1280,7 @@ mm_image_decode_from_jpeg_memory_with_libjpeg(mm_util_jpeg_yuv_data * decoded_da
 	return iErrorCode;
 }
 
+#if 0
 static int _mm_util_set_exif_entry(ExifData *exif, ExifIfd ifd, ExifTag tag,ExifFormat format, unsigned long components, unsigned char* data)
 {
 	ExifData *ed = (ExifData *)exif;
@@ -1323,6 +1328,7 @@ static int _mm_util_set_exif_entry(ExifData *exif, ExifIfd ifd, ExifTag tag,Exif
 
 	return 0;
 }
+#endif
 
 EXPORT_API int
 mm_util_jpeg_encode_to_file(const char *filename, void* src, int width, int height, mm_util_jpeg_yuv_format fmt, int quality)
@@ -1369,7 +1375,7 @@ mm_util_jpeg_encode_to_file(const char *filename, void* src, int width, int heig
 		dst = malloc(dst_size);
 		if(dst) {
 			ret = mm_util_convert_colorspace(src, width, height,MM_UTIL_IMG_FMT_NV12, dst, MM_UTIL_IMG_FMT_YUV420);
-			ret =mm_image_encode_to_jpeg_file_with_libjpeg(filename, dst, width, height, MM_UTIL_JPEG_FMT_YUV420, quality);
+			ret = mm_image_encode_to_jpeg_file_with_libjpeg(filename, dst, width, height, MM_UTIL_JPEG_FMT_YUV420, quality);
 			free(dst);
 			dst=NULL;
 		} else {
@@ -1434,7 +1440,7 @@ mm_util_jpeg_encode_to_memory(void **mem, int *size, void* src, int width, int h
 			ret = mm_util_convert_colorspace(src, width, height,MM_UTIL_IMG_FMT_NV12, dst, MM_UTIL_IMG_FMT_YUV420);
 			ret = mm_image_encode_to_jpeg_memory_with_libjpeg(mem, size, dst, width, height, MM_UTIL_JPEG_FMT_YUV420, quality);
 			free(dst);
-			dst=NULL;
+			dst = NULL;
 		} else {
 			TTRACE_END();
 			return MM_ERROR_IMAGE_NO_FREE_SPACE;
@@ -1475,8 +1481,12 @@ mm_util_decode_from_jpeg_file(mm_util_jpeg_yuv_data *decoded, const char *filena
 
 	FILE *fp = fopen(filename, "rb");
 	unsigned char magic[2] = {0};
+	size_t read_size = 0;
 	if(fp) {
-		fread((void *)magic, 1, 2, fp);
+		read_size = fread((void *)magic, 1, 2, fp);
+		if (read_size > 0)
+			debug_log("Success fread");
+
 		debug_log("%x %x", magic[0], magic[1]);
 		fclose(fp);
 	} else {
@@ -1499,6 +1509,9 @@ mm_util_decode_from_jpeg_file(mm_util_jpeg_yuv_data *decoded, const char *filena
 			if (ret == MM_ERROR_NONE) {
 				int err = MM_ERROR_NONE;
 				err = mm_util_get_image_size(MM_UTIL_IMG_FMT_NV12, decoded->width, decoded->height, &dst_size);
+				if (err != MM_ERROR_NONE)
+					debug_error("fail mm_util_get_image_size");
+
 				unsigned char *dst = NULL;
 				dst = malloc(dst_size);
 				if(dst) {
@@ -1589,6 +1602,9 @@ mm_util_decode_from_jpeg_memory(mm_util_jpeg_yuv_data* decoded, void* src, int s
 		if (ret == MM_ERROR_NONE) {
 			int err = MM_ERROR_NONE;
 			err = mm_util_get_image_size(MM_UTIL_IMG_FMT_NV12, decoded->width, decoded->height, &dst_size);
+			if (err != MM_ERROR_NONE)
+					debug_error("fail mm_util_get_image_size");
+
 			dst = malloc(dst_size);
 			if(dst) {
 				ret = mm_util_convert_colorspace(decoded->data, decoded->width, decoded->height, MM_UTIL_IMG_FMT_YUV420, dst, MM_UTIL_IMG_FMT_NV12);
@@ -1649,8 +1665,12 @@ mm_util_decode_from_jpeg_file_with_downscale(mm_util_jpeg_yuv_data *decoded, con
 
 	FILE *fp = fopen(filename, "rb");
 	unsigned char magic[2] = {0};
+	size_t read_size = 0;
 	if(fp) {
-		fread((void *)magic, 1, 2, fp);
+		read_size = fread((void *)magic, 1, 2, fp);
+		if (read_size > 0)
+			debug_log("Success fread");
+
 		debug_log("%x %x", magic[0], magic[1]);
 		fclose(fp);
 	}
@@ -1668,6 +1688,9 @@ mm_util_decode_from_jpeg_file_with_downscale(mm_util_jpeg_yuv_data *decoded, con
 			if (ret == MM_ERROR_NONE) {
 				int err = MM_ERROR_NONE;
 				err = mm_util_get_image_size(MM_UTIL_IMG_FMT_NV12, decoded->width, decoded->height, &dst_size);
+				if (err != MM_ERROR_NONE)
+					debug_error("fail mm_util_get_image_size");
+
 				unsigned char *dst = NULL;
 				dst = malloc(dst_size);
 				if(dst) {
@@ -1763,6 +1786,9 @@ mm_util_decode_from_jpeg_memory_with_downscale(mm_util_jpeg_yuv_data* decoded, v
 		if (ret == MM_ERROR_NONE) {
 			int err = MM_ERROR_NONE;
 			err = mm_util_get_image_size(MM_UTIL_IMG_FMT_NV12, decoded->width, decoded->height, &dst_size);
+			if (err != MM_ERROR_NONE)
+					debug_error("fail mm_util_get_image_size");
+
 			dst = malloc(dst_size);
 			if(dst) {
 				ret = mm_util_convert_colorspace(decoded->data, decoded->width, decoded->height, MM_UTIL_IMG_FMT_YUV420, dst, MM_UTIL_IMG_FMT_NV12);

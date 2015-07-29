@@ -101,7 +101,7 @@ static int _read_file(char *file_name, void **data, int *data_size)
 }
 
 
-static int _write_file(char *file_name, void *data, int data_size)
+static int _write_file(const char *file_name, void *data, int data_size)
 {
 	FILE *fp = NULL;
 
@@ -165,6 +165,17 @@ int main(int argc, char *argv[])
 		} else {
 			ret = MM_ERROR_IMAGE_INTERNAL;
 		}
+	} else if (!strcmp("enc2file", argv[1])) {
+		if (_read_file(argv[2], &src, &src_size)) {
+			width = atoi(argv[3]);
+			height = atoi(argv[4]);
+			quality = atoi(argv[5]);
+			fmt = atoi(argv[6]);
+
+			ret = mm_util_jpeg_encode_to_file(ENCODE_RESULT_PATH, src, width, height, fmt, quality);
+		} else {
+			ret = MM_ERROR_IMAGE_INTERNAL;
+		}
 	} else if (!strcmp("decode", argv[1])) {
 		if (_read_file(argv[2], &src, &src_size)) {
 			fmt = atoi(argv[3]);
@@ -211,7 +222,7 @@ int main(int argc, char *argv[])
 			if(decoded_data.data) {
 				fprintf(stderr, "\t##Decoded data##: %p\t width: %d\t height:%d\t size: %d\n",
 				                decoded_data.data, decoded_data.width, decoded_data.height, decoded_data.size);
-				char filename[BUFFER_SIZE];
+				char filename[BUFFER_SIZE] = {0, };
 				memset(filename, 0, BUFFER_SIZE);
 				if(fmt == MM_UTIL_JPEG_FMT_RGB888 || fmt == MM_UTIL_JPEG_FMT_RGBA8888 || fmt == MM_UTIL_JPEG_FMT_BGRA8888 || fmt == MM_UTIL_JPEG_FMT_ARGB8888) {
 					snprintf(filename, BUFFER_SIZE, "%s%s", DECODE_RESULT_PATH, "rgb");

@@ -89,9 +89,6 @@ transform_completed_cb(media_packet_h *packet, int error, void *user_param)
 		IMGP_FREE(output_fmt);
 	} else {
 		debug_error("[ERROR] complete cb");
-		GThread * destroy_thread = g_thread_new(NULL, mm_util_destroy, MMHandle);
-		return_val_if_fail(destroy_thread, FALSE);
-		g_thread_unref(destroy_thread);
 	}
 
 	completed = true;

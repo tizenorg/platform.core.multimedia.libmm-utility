@@ -153,7 +153,6 @@ typedef struct
 	unsigned int dst_width;
 	unsigned int dst_height;
 	mm_util_rotation_e dst_rotation;
-	unsigned int _MMHandle;
 	bool hardware_acceleration;
 	mm_util_cb_s *_util_cb;
 	bool is_completed;
@@ -182,8 +181,8 @@ typedef struct
 	guint dst_buf_idx;
 
 	/* for multi instance */
-	GCond* thread_cond;
-	GMutex *thread_mutex;
+	GCond thread_cond;
+	GMutex thread_mutex;
 	GThread* thread;
 	GAsyncQueue *queue;
 } mm_util_s;
