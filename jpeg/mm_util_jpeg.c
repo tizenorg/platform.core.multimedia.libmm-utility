@@ -702,6 +702,7 @@ mm_image_encode_to_jpeg_memory_with_libjpeg(void **mem, int *csize, void *rawdat
 	struct jpeg_compress_struct cinfo;
 	struct jpeg_error_mgr jerr;
 	int i, j, flag, _height;
+	unsigned long size = 0;
 	*csize = 0;
 	data[0] = y;
 	data[1] = cb;
@@ -728,7 +729,7 @@ mm_image_encode_to_jpeg_memory_with_libjpeg(void **mem, int *csize, void *rawdat
 	debug_log("[mm_image_encode_to_jpeg_memory_with_libjpeg] #After jpeg_mem_dest#, mem: %p\t width: %d\t height: %d\t fmt: %d\t quality: %d"
 		, mem, width, height, fmt, quality);
 
-	jpeg_mem_dest(&cinfo, (unsigned char **)mem, (unsigned long *)csize);
+	jpeg_mem_dest(&cinfo, (unsigned char **)mem, &size);
 	cinfo.image_width = width;
 	cinfo.image_height = height;
 	if (fmt ==MM_UTIL_JPEG_FMT_YUV420 ||fmt ==MM_UTIL_JPEG_FMT_YUV422 || fmt ==MM_UTIL_JPEG_FMT_UYVY) {
@@ -883,6 +884,7 @@ mm_image_encode_to_jpeg_memory_with_libjpeg(void **mem, int *csize, void *rawdat
 		debug_error("We can't encode the IMAGE format");
 		return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
 	}
+	*csize = (int)size;
 	return iErrorCode;
 }
 
