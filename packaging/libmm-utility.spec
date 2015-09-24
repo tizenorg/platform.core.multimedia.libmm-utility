@@ -1,6 +1,6 @@
 Name:       libmm-utility
 Summary:    Multimedia Framework Utility Library
-Version:    0.14
+Version:    0.15
 Release:    0
 Group:      System/Libraries
 License:    Apache-2.0
@@ -9,7 +9,7 @@ Source1001: libmm-utility.manifest
 Requires(post):    /sbin/ldconfig
 Requires(postun):  /sbin/ldconfig
 BuildRequires:  pkgconfig(mm-common)
-BuildRequires:  pkgconfig(mm-log)
+BuildRequires:  pkgconfig(dlog)
 BuildRequires:  pkgconfig(glib-2.0)
 BuildRequires:  pkgconfig(gmodule-2.0)
 BuildRequires:  libjpeg-turbo-devel
@@ -61,6 +61,8 @@ sed -i -e "s#@JPEG_REQPKG@#$JPEG_REQPKG#g" jpeg/mmutil-jpeg.pc
 %install
 rm -rf %{buildroot}
 %make_install
+mkdir -p %{buildroot}/usr/share/license
+cp LICENSE %{buildroot}/usr/share/license/%{name}
 
 %clean
 rm -rf %{buildroot}
@@ -69,8 +71,8 @@ rm -rf %{buildroot}
 %postun -p /sbin/ldconfig
 
 %files
+/usr/share/license/%{name}
 %manifest %{name}.manifest
-%license LICENSE LICENSE.APLv2.0
 %defattr(-,root,root,-)
 %{_libdir}/*.so*
 

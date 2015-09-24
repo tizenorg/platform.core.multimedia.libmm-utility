@@ -28,7 +28,6 @@
 #include <unistd.h>
 #include <mm_util_jpeg.h>
 #include <mm_error.h>
-#include <mm_debug.h>
 #include <tzplatform_config.h>
 
 #define ENCODE_RESULT_PATH tzplatform_mkpath(TZ_USER_CONTENT, "encode_test.jpg")
@@ -74,9 +73,9 @@ static int _read_file(char *file_name, void **data, int *data_size)
 			return FALSE;
 		} else {
 			if(fread(*data, 1, file_size, fp)) {
-				debug_log("#Success# fread");
+				fprintf(stderr, "#Success# fread\n");
 			} else {
-				debug_error("#Error# fread");
+				fprintf(stderr, "#Error# fread\n");
 				fclose(fp);
 				fp = NULL;
 				return FALSE;
@@ -93,7 +92,7 @@ static int _read_file(char *file_name, void **data, int *data_size)
 			return FALSE;
 		}
 	} else {
-		debug_error("#Error# ftell");
+		fprintf(stderr, "#Error# ftell\n");
 		fclose(fp);
 		fp = NULL;
 		return FALSE;

@@ -4,7 +4,8 @@ lib_LTLIBRARIES = libmmutil_imgp.la
 
 installmmutil_imgpdir = $(includedir)/mmf
 installmmutil_imgp_HEADERS = include/mm_util_imgp.h
-noinst_HEADERS = include/mm_util_imgp_internal.h
+noinst_HEADERS = include/mm_util_imgp_internal.h \
+                 include/mm_util_debug.h
 
 libmmutil_imgp_la_SOURCES = mm_util_imgp.c
 
@@ -20,7 +21,7 @@ libmmutil_imgp_la_CFLAGS = -I$(srcdir)/include \
                            $(DRI2PROTO_CFLAGS) \
                            $(DRI2_CFLAGS) \
                            $(TBM_CFLAGS) \
-                           $(MMLOG_CFLAGS) -DMMF_LOG_OWNER=0x0100 -DMMF_DEBUG_PREFIX=\"MMF-IMAGE\"
+                           $(DLOG_CFLAGS)
 
 libmmutil_imgp_la_LIBADD = $(MMCOMMON_LIBS) \
                            $(GLIB_LIBS) \
@@ -32,9 +33,9 @@ libmmutil_imgp_la_LIBADD = $(MMCOMMON_LIBS) \
                            $(DRI2PROTO_LIBS) \
                            $(DRI2_LIBS) \
                            $(TBM_LIBS) \
-                           $(MMLOG_LIBS)
+                           $(DLOG_LIBS)
 
-libmmutil_imgp_la_CFLAGS += -lcapi-media-tool -lttrace $(MMLOG_CFLAGS) -DMMF_LOG_OWNER=0x0100 -DMMF_DEBUG_PREFIX=\"MMF-IMAGE\" -DLIBPREFIX=\"$(libdir)\"
+libmmutil_imgp_la_CFLAGS += -lcapi-media-tool -lttrace $(MMLOG_CFLAGS) -DLIBPREFIX=\"$(libdir)\"
 
 pcfiles = mmutil-imgp.pc
 pkgconfigdir = $(libdir)/pkgconfig

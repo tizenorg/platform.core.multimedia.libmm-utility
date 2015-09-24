@@ -30,7 +30,6 @@
 #endif
 
 #include <gmodule.h>
-#include <mm_debug.h>
 #include <mm_types.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -47,7 +46,7 @@
 #define PATH_GSTCS_LIB					LIBPREFIX "/libmmutil_imgp_gstcs.so"
 
 #define IMGP_FUNC_NAME  				"mm_imgp"
-#define IMGP_FREE(src) { if(src) {g_free(src); src = NULL;} }
+#define IMGP_FREE(src) { if(src != NULL) {g_free(src); src = NULL;} }
 #define SCMN_IMGB_MAX_PLANE         (4)
 #define MAX_SRC_BUF_NUM          12	/* Max number of upstream src plugins's buffer */
 #define MAX_DST_BUF_NUM          12
@@ -91,6 +90,7 @@ typedef struct _imgp_info_s
 	unsigned int dst_height;
 	unsigned int output_stride;
 	unsigned int output_elevation;
+	unsigned int buffer_size;
 	mm_util_img_rotate_type angle;
 } imgp_info_s;
 
