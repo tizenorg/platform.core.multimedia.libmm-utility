@@ -21,12 +21,11 @@
 #include "mm_util_imgp.h"
 #include "mm_util_imgp_internal.h"
 #include "mm_util_debug.h"
-#include <mm_error.h>
+
 #define ONE_ALL 0
 #define IMAGE_FORMAT_LABEL_BUFFER_SIZE 4
 MMHandleType MMHandle = 0;
 bool completed = false;
-
 
 int packet_finalize_callback(media_packet_h packet, int err, void* userdata)
 {
@@ -46,11 +45,11 @@ transform_completed_cb(media_packet_h *packet, int error, void *user_param)
 	int dst_width, dst_height, dst_avg_bps, dst_max_bps;
 	char *output_fmt = NULL;
 
-	if(error == MM_ERROR_NONE) {
+	if(error == MM_UTIL_ERROR_NONE) {
 		mm_util_debug("completed");
 		output_fmt = (char*)malloc(sizeof(char) * IMAGE_FORMAT_LABEL_BUFFER_SIZE);
 		if(output_fmt) {
-			if(media_packet_get_format(*packet, &dst_fmt) != MM_ERROR_NONE) {
+			if(media_packet_get_format(*packet, &dst_fmt) != MM_UTIL_ERROR_NONE) {
 				mm_util_error("Imedia_packet_get_format");
 				IMGP_FREE(output_fmt);
 				return FALSE;
@@ -73,7 +72,7 @@ transform_completed_cb(media_packet_h *packet, int error, void *user_param)
 		if(fpout) {
 			media_packet_get_buffer_size(*packet, &size);
 			void *dst = NULL;
-			if(media_packet_get_buffer_data_ptr(*packet, &dst) != MM_ERROR_NONE) {
+			if(media_packet_get_buffer_data_ptr(*packet, &dst) != MM_UTIL_ERROR_NONE) {
 				IMGP_FREE(dst);
 				IMGP_FREE(output_fmt);
 				fclose(fpout);
@@ -115,7 +114,7 @@ int main(int argc, char *argv[])
 
 	/* Create Transform */
 	ret = mm_util_create (&MMHandle);
-	if(ret == MM_ERROR_NONE) {
+	if(ret == MM_UTIL_ERROR_NONE) {
 		mm_util_debug("Success - Create Transcode Handle [MMHandle: 0x%2x]", MMHandle);
 	} else {
 		mm_util_debug("ERROR - Create Transcode Handle");
@@ -129,31 +128,31 @@ int main(int argc, char *argv[])
 		if(media_format_set_video_mime(fmt, MEDIA_FORMAT_I420) != MEDIA_FORMAT_ERROR_NONE) {
 			media_format_unref(fmt);
 			mm_util_error("[Error] Set - video mime");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
+			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 
 		if(media_format_set_video_width(fmt, 320) != MEDIA_FORMAT_ERROR_NONE) {
 			media_format_unref(fmt);
 			mm_util_error("[Error] Set - video width");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
+			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 
 		if(media_format_set_video_height(fmt, 240) != MEDIA_FORMAT_ERROR_NONE) {
 			media_format_unref(fmt);
 			mm_util_error("[Error] Set - video height");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
+			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 
 		if(media_format_set_video_avg_bps(fmt, 15000000) != MEDIA_FORMAT_ERROR_NONE) {
 			media_format_unref(fmt);
 			mm_util_error("[Error] Set - video avg bps");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
+			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 
 		if(media_format_set_video_max_bps(fmt, 20000000) != MEDIA_FORMAT_ERROR_NONE) {
 			media_format_unref(fmt);
 			mm_util_error("[Error] Set - video max bps");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
+			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 
 		mm_util_debug("media_format_set_video_info success! w:320, h:240, MEDIA_FORMAT_I420\n");
@@ -163,25 +162,25 @@ int main(int argc, char *argv[])
 	}
 
 	ret = media_packet_create_alloc(fmt, (media_packet_finalize_cb)packet_finalize_callback, NULL, &src_packet);
-	if(ret == MM_ERROR_NONE) {
+	if(ret == MM_UTIL_ERROR_NONE) {
 		mm_util_debug("Success - Create Media Packet(%p)", src_packet);
 		uint64_t size =0;
 		if (media_packet_get_buffer_size(src_packet, &size) == MEDIA_PACKET_ERROR_NONE) {
 			ptr = malloc(size);
 			if (ptr == NULL) {
 				mm_util_debug("\tmemory allocation failed\n");
-				return MM_ERROR_IMAGE_INTERNAL;
+				return MM_UTIL_ERROR_INVALID_OPERATION;
 			}
 			if (media_packet_get_buffer_data_ptr(src_packet, &ptr) == MEDIA_PACKET_ERROR_NONE) {
 				FILE *fp = fopen(argv[1], "r");
 				if (fp == NULL) {
 					mm_util_debug("\tfile open failed %d\n", errno);
-					return MM_ERROR_IMAGE_INTERNAL;
+					return MM_UTIL_ERROR_INVALID_OPERATION;
 				}
 				src = malloc(size);
 				if (src == NULL) {
 					mm_util_debug("\tmemory allocation failed\n");
-					return MM_ERROR_IMAGE_INTERNAL;
+					return MM_UTIL_ERROR_INVALID_OPERATION;
 				}
 				if(fread(src, 1, (int)size, fp)) {
 					mm_util_debug("#Success# fread");
@@ -199,7 +198,7 @@ int main(int argc, char *argv[])
 
 	/* Set Source */
 	ret = mm_util_set_hardware_acceleration(MMHandle, atoi(argv[2]));
-	if(ret == MM_ERROR_NONE) {
+	if(ret == MM_UTIL_ERROR_NONE) {
 		mm_util_debug("Success - Set hardware_acceleration");
 	} else {
 		mm_util_debug("ERROR - Set hardware_acceleration");
@@ -207,7 +206,7 @@ int main(int argc, char *argv[])
 	}
 
 	ret = mm_util_set_resolution(MMHandle, 176, 144);
-	if(ret == MM_ERROR_NONE) {
+	if(ret == MM_UTIL_ERROR_NONE) {
 		mm_util_debug("Success - Set Convert Info");
 	} else {
 		media_format_unref(fmt);
@@ -217,7 +216,7 @@ int main(int argc, char *argv[])
 
 	/* Transform */
 	ret = mm_util_transform(MMHandle, src_packet, (mm_util_completed_callback) transform_completed_cb, handle);
-	if(ret == MM_ERROR_NONE) {
+	if(ret == MM_UTIL_ERROR_NONE) {
 		mm_util_debug("Success - Transform");
 	} else {
 		media_format_unref(fmt);
@@ -229,7 +228,7 @@ int main(int argc, char *argv[])
 	while (false == completed) {} // polling
 
 	ret = mm_util_destroy(MMHandle);
-	if(ret == MM_ERROR_NONE) {
+	if(ret == MM_UTIL_ERROR_NONE) {
 		mm_util_debug("Success - Destroy");
 	} else {
 		media_format_unref(fmt);

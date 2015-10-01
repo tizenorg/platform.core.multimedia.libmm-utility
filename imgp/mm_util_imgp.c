@@ -19,12 +19,10 @@
  *
  */
 #include <limits.h>
-#include <mm_debug.h>
 #include "mm_util_debug.h"
 #include "mm_util_imgp.h"
 #include "mm_util_imgp_internal.h"
 #include <gmodule.h>
-#include <mm_error.h>
 #ifdef ENABLE_TTRACE
 #include <ttrace.h>
 #define TTRACE_BEGIN(NAME) traceBegin(TTRACE_TAG_IMAGE, NAME)
@@ -49,10 +47,10 @@ static int __mm_util_transform_exec(mm_util_s * handle, media_packet_h src_packe
 static int check_valid_picture_size(int width, int height)
 {
 	if((int)width>0 && (int)height>0 && (width+128)*(unsigned long long)(height+128) < INT_MAX/4) {
-		return MM_ERROR_NONE;
+		return MM_UTIL_ERROR_NONE;
 	}
 
-	return MM_ERROR_IMAGE_INVALID_VALUE;
+	return MM_UTIL_ERROR_INVALID_PARAMETER;
 }
 
 static void __mm_destroy_temp_buffer(unsigned char *buffer[])
@@ -249,7 +247,7 @@ static gboolean __mm_is_rgb_format(mm_util_img_format format)
 
 int __mm_util_get_buffer_size(mm_util_img_format format, unsigned int width, unsigned int height, unsigned int *imgsize)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	unsigned char x_chroma_shift = 0;
 	unsigned char y_chroma_shift = 0;
 	int size, w2, h2, size2;
@@ -260,7 +258,7 @@ int __mm_util_get_buffer_size(mm_util_img_format format, unsigned int width, uns
 	if (!imgsize) {
 		mm_util_error("imgsize can't be null");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_FILEOPEN;
+		return MM_UTIL_ERROR_NO_SUCH_FILE;
 	}
 
 	*imgsize = 0;
@@ -268,7 +266,7 @@ int __mm_util_get_buffer_size(mm_util_img_format format, unsigned int width, uns
 	if (check_valid_picture_size(width, height) < 0) {
 		mm_util_error("invalid width and height");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	switch (format)
@@ -335,7 +333,7 @@ int __mm_util_get_buffer_size(mm_util_img_format format, unsigned int width, uns
 		default:
 			mm_util_error("Not supported format");
 			TTRACE_END();
-			return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+			return MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
 	}
 	mm_util_debug("format: %d, *imgsize: %d\n", format, *imgsize);
 
@@ -345,11 +343,11 @@ int __mm_util_get_buffer_size(mm_util_img_format format, unsigned int width, uns
 
 static int __mm_confirm_dst_width_height(unsigned int src_width, unsigned int src_height, unsigned int *dst_width, unsigned int *dst_height, mm_util_img_rotate_type angle)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 
 	if (!dst_width || !dst_height) {
 		mm_util_error("[%s][%05d] dst_width || dst_height Buffer is NULL");
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	switch(angle) {
@@ -384,7 +382,7 @@ static int __mm_confirm_dst_width_height(unsigned int src_width, unsigned int sr
 
 		default:
 			mm_util_error("Not supported rotate value");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
+			return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	return ret;
@@ -392,12 +390,12 @@ static int __mm_confirm_dst_width_height(unsigned int src_width, unsigned int sr
 
 static int __mm_set_format_label(imgp_info_s * _imgp_info_s, mm_util_img_format src_format, mm_util_img_format dst_format)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	char *src_fmt_lable = NULL;
 	char *dst_fmt_lable = NULL;
 	if(_imgp_info_s == NULL) {
 		mm_util_error("_imgp_info_s: 0x%2x", _imgp_info_s);
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	switch(src_format) {
@@ -489,7 +487,7 @@ static int __mm_set_format_label(imgp_info_s * _imgp_info_s, mm_util_img_format 
 		_imgp_info_s->input_format_label = (char*)malloc(strlen(src_fmt_lable) + 1);
 		if(_imgp_info_s->input_format_label == NULL) {
 			mm_util_error("[input] input_format_label is null");
-			return MM_ERROR_IMAGE_NO_FREE_SPACE;
+			return MM_UTIL_ERROR_OUT_OF_MEMORY;
 		}
 		memset(_imgp_info_s->input_format_label, 0, strlen(src_fmt_lable) + 1);
 		strncpy(_imgp_info_s->input_format_label, src_fmt_lable, strlen(src_fmt_lable));
@@ -498,7 +496,7 @@ static int __mm_set_format_label(imgp_info_s * _imgp_info_s, mm_util_img_format 
 		if(_imgp_info_s->output_format_label == NULL) {
 			mm_util_error("[input] input_format_label is null");
 			IMGP_FREE(_imgp_info_s->input_format_label);
-			return MM_ERROR_IMAGE_NO_FREE_SPACE;
+			return MM_UTIL_ERROR_OUT_OF_MEMORY;
 		}
 		memset(_imgp_info_s->output_format_label, 0, strlen(dst_fmt_lable) + 1);
 		strncpy(_imgp_info_s->output_format_label, dst_fmt_lable, strlen(dst_fmt_lable));
@@ -506,7 +504,7 @@ static int __mm_set_format_label(imgp_info_s * _imgp_info_s, mm_util_img_format 
 		mm_util_debug("input_format_label: %s output_format_label: %s", _imgp_info_s->input_format_label, _imgp_info_s->output_format_label);
 	}else {
 		mm_util_error("[error] src_fmt_lable && dst_fmt_lable");
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	return ret;
@@ -514,17 +512,17 @@ static int __mm_set_format_label(imgp_info_s * _imgp_info_s, mm_util_img_format 
 
 static int __mm_set_imgp_info_s(imgp_info_s * _imgp_info_s, mm_util_img_format src_format, unsigned int src_width, unsigned int src_height, mm_util_img_format dst_format, unsigned int dst_width, unsigned int dst_height, mm_util_img_rotate_type angle)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 
 	if(_imgp_info_s == NULL) {
 		mm_util_error("_imgp_info_s is NULL");
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	ret = __mm_set_format_label(_imgp_info_s, src_format, dst_format);
-	if(ret != MM_ERROR_NONE) {
+	if(ret != MM_UTIL_ERROR_NONE) {
 		mm_util_error("[input] mm_set_format_label error");
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	_imgp_info_s->src_format = src_format;
@@ -588,7 +586,7 @@ static int _mm_util_transform_packet_finalize_callback(media_packet_h packet, in
 
 static int __mm_util_imgp_finalize(GModule *module, imgp_info_s *_imgp_info_s)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 
 	if(module) {
 		mm_util_debug("module : %p", module);
@@ -597,7 +595,7 @@ static int __mm_util_imgp_finalize(GModule *module, imgp_info_s *_imgp_info_s)
 		module = NULL;
 	}else {
 		mm_util_error("#module is NULL#");
-		ret = MM_ERROR_IMAGE_INVALID_VALUE;
+		ret = MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	IMGP_FREE(_imgp_info_s->input_format_label);
@@ -610,7 +608,7 @@ static int __mm_util_imgp_finalize(GModule *module, imgp_info_s *_imgp_info_s)
 static int __mm_util_crop_rgba32(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
 unsigned int crop_start_x, unsigned int crop_start_y, unsigned int crop_dest_width, unsigned int crop_dest_height, unsigned char *dst)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	unsigned int idx = 0;
 	int src_bytesperline = src_width * 4;
 	int dst_bytesperline = crop_dest_width * 4;
@@ -631,7 +629,7 @@ unsigned int crop_start_x, unsigned int crop_start_y, unsigned int crop_dest_wid
 static int __mm_util_crop_rgb888(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
 unsigned int crop_start_x, unsigned int crop_start_y, unsigned int crop_dest_width, unsigned int crop_dest_height, unsigned char *dst)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	unsigned int idx = 0;
 	int src_bytesperline = src_width * 3;
 	int dst_bytesperline = crop_dest_width * 3;
@@ -652,7 +650,7 @@ unsigned int crop_start_x, unsigned int crop_start_y, unsigned int crop_dest_wid
 static int __mm_util_crop_rgb565(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
 unsigned int crop_start_x, unsigned int crop_start_y, unsigned int crop_dest_width, unsigned int crop_dest_height, unsigned char *dst)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	unsigned int idx = 0;
 	int src_bytesperline = src_width * 2;
 	int dst_bytesperline = crop_dest_width * 2;
@@ -673,7 +671,7 @@ unsigned int crop_start_x, unsigned int crop_start_y, unsigned int crop_dest_wid
 static int __mm_util_crop_yuv420(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
 unsigned int crop_start_x, unsigned int crop_start_y, unsigned int crop_dest_width, unsigned int crop_dest_height, unsigned char *dst)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	unsigned int idx = 0;
 	int start_x = crop_start_x;
 	int start_y = crop_start_y;
@@ -726,11 +724,11 @@ static bool __mm_util_check_resolution(unsigned int width, unsigned int height)
 
 static int __mm_util_handle_init(mm_util_s *handle)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 
 	if (!handle) {
 		mm_util_error("[ERROR] - handle");
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	/* private values init */
@@ -762,11 +760,11 @@ static int __mm_util_handle_init(mm_util_s *handle)
 
 static int __mm_util_handle_refresh(mm_util_s *handle)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 
 	if (!handle) {
 		mm_util_error("[ERROR] - handle");
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	/* restore original settings */
@@ -893,7 +891,7 @@ static mm_util_img_format __mm_util_mapping_mime_format_to_imgp(media_format_mim
 gpointer _mm_util_thread_repeate(gpointer data)
 {
 	mm_util_s* handle = (mm_util_s*) data;
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	gint64 end_time = 0;
 
 	if (!handle) {
@@ -920,7 +918,7 @@ gpointer _mm_util_thread_repeate(gpointer data)
 			mm_util_error("[NULL] Queue data");
 		} else {
 			ret = __mm_util_transform_exec(handle, pop_data); /* Need to block */
-			if(ret == MM_ERROR_NONE) {
+			if(ret == MM_UTIL_ERROR_NONE) {
 				mm_util_debug("Success - transform_exec");
 			} else{
 				mm_util_error("Error - transform_exec");
@@ -942,11 +940,11 @@ gpointer _mm_util_thread_repeate(gpointer data)
 
 static int __mm_util_create_thread(mm_util_s *handle)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 
 	if (!handle) {
 		mm_util_error("[ERROR] - handle");
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	g_mutex_init(&(handle->thread_mutex));
@@ -964,7 +962,7 @@ static int __mm_util_create_thread(mm_util_s *handle)
 	handle->thread = g_thread_new("transform_thread", (GThreadFunc)_mm_util_thread_repeate, (gpointer)handle);
 	if(!handle->thread) {
 		mm_util_error("ERROR - create thread");
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	return ret;
@@ -972,7 +970,7 @@ static int __mm_util_create_thread(mm_util_s *handle)
 
 static int __mm_util_processing(mm_util_s *handle)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	unsigned char *dst_buf[4] = {NULL,};
 	unsigned int dst_buf_size = 0;
 	unsigned int src_width = 0, src_height = 0;
@@ -981,36 +979,36 @@ static int __mm_util_processing(mm_util_s *handle)
 
 	if(handle == NULL) {
 		mm_util_error ("Invalid arguments [tag null]");
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	if(handle->src_packet == NULL) {
 		mm_util_error ("[src] media_packet_h");
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	if(handle->dst_packet == NULL) {
 		mm_util_error ("[dst] media_packet_h");
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	if(handle->src_buf_size) {
 		handle->src = NULL;
-		if(media_packet_get_buffer_data_ptr(handle->src_packet, &handle->src) != MM_ERROR_NONE) {
+		if(media_packet_get_buffer_data_ptr(handle->src_packet, &handle->src) != MM_UTIL_ERROR_NONE) {
 			mm_util_error ("[src] media_packet_get_extra");
 			IMGP_FREE(handle->src);
-			return MM_ERROR_IMAGE_INVALID_VALUE;
+			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 		mm_util_debug("src buffer pointer: %p", handle->src);
 	}
 
 	if(handle->dst_buf_size) {
 		handle->dst = NULL;
-		if(media_packet_get_buffer_data_ptr(handle->dst_packet, &handle->dst) != MM_ERROR_NONE) {
+		if(media_packet_get_buffer_data_ptr(handle->dst_packet, &handle->dst) != MM_UTIL_ERROR_NONE) {
 			IMGP_FREE(handle->src);
 			IMGP_FREE(handle->dst);
 			mm_util_error ("[dst] media_packet_get_extra");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
+			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 	}
 
@@ -1024,7 +1022,7 @@ static int __mm_util_processing(mm_util_s *handle)
 		mm_util_error ("[multi func] memory allocation error");
 		IMGP_FREE(handle->src);
 		IMGP_FREE(handle->dst);
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 	memcpy(dst_buf[src_index], handle->src, handle->src_buf_size);
 	if (handle->set_crop) {
@@ -1036,11 +1034,11 @@ static int __mm_util_processing(mm_util_s *handle)
 			IMGP_FREE(handle->src);
 			IMGP_FREE(handle->dst);
 			__mm_destroy_temp_buffer(dst_buf);
-			return MM_ERROR_IMAGE_INTERNAL;
+			return MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 		ret = mm_util_crop_image(dst_buf[src_index], src_width, src_height, src_format,
 		handle->start_x, handle->start_y, &handle->dst_width, &handle->dst_height, dst_buf[dst_index]);
-		if (ret != MM_ERROR_NONE) {
+		if (ret != MM_UTIL_ERROR_NONE) {
 			IMGP_FREE(handle->src);
 			IMGP_FREE(handle->dst);
 			__mm_destroy_temp_buffer(dst_buf);
@@ -1059,10 +1057,10 @@ static int __mm_util_processing(mm_util_s *handle)
 			IMGP_FREE(handle->src);
 			IMGP_FREE(handle->dst);
 			__mm_destroy_temp_buffer(dst_buf);
-			return MM_ERROR_IMAGE_INTERNAL;
+			return MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 		ret = mm_util_resize_image(dst_buf[src_index], src_width, src_height,src_format, dst_buf[dst_index], &handle->dst_width, &handle->dst_height);
-		if (ret != MM_ERROR_NONE) {
+		if (ret != MM_UTIL_ERROR_NONE) {
 			IMGP_FREE(handle->src);
 			IMGP_FREE(handle->dst);
 			__mm_destroy_temp_buffer(dst_buf);
@@ -1083,10 +1081,10 @@ static int __mm_util_processing(mm_util_s *handle)
 			IMGP_FREE(handle->src);
 			IMGP_FREE(handle->dst);
 			__mm_destroy_temp_buffer(dst_buf);
-			return MM_ERROR_IMAGE_INTERNAL;
+			return MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 		ret = mm_util_convert_colorspace(dst_buf[src_index], src_width, src_height, src_format, dst_buf[dst_index], handle->dst_format);
-		if (ret != MM_ERROR_NONE) {
+		if (ret != MM_UTIL_ERROR_NONE) {
 			IMGP_FREE(handle->src);
 			IMGP_FREE(handle->dst);
 			__mm_destroy_temp_buffer(dst_buf);
@@ -1119,10 +1117,10 @@ static int __mm_util_processing(mm_util_s *handle)
 			IMGP_FREE(handle->src);
 			IMGP_FREE(handle->dst);
 			__mm_destroy_temp_buffer(dst_buf);
-			return MM_ERROR_IMAGE_INTERNAL;
+			return MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 		ret = mm_util_rotate_image(dst_buf[src_index], src_width, src_height, src_format, dst_buf[dst_index], &handle->dst_width, &handle->dst_height, handle->dst_rotation);
-		if (ret != MM_ERROR_NONE) {
+		if (ret != MM_UTIL_ERROR_NONE) {
 			IMGP_FREE(handle->src);
 			IMGP_FREE(handle->dst);
 			__mm_destroy_temp_buffer(dst_buf);
@@ -1147,7 +1145,7 @@ static int __mm_util_processing(mm_util_s *handle)
 
 static int __mm_util_transform_exec(mm_util_s * handle, media_packet_h src_packet)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	media_format_h src_fmt;
 	media_format_h dst_fmt;
 	media_format_mimetype_e src_mimetype;
@@ -1155,9 +1153,9 @@ static int __mm_util_transform_exec(mm_util_s * handle, media_packet_h src_packe
 	unsigned int dst_width = 0, dst_height = 0;
 	uint64_t size = 0;
 
-	if(media_packet_get_format(src_packet, &src_fmt) != MM_ERROR_NONE) {
+	if(media_packet_get_format(src_packet, &src_fmt) != MM_UTIL_ERROR_NONE) {
 		mm_util_error("Imedia_packet_get_format)");
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	if(media_format_get_video_info(src_fmt, &src_mimetype, &src_width, &src_height, &src_avg_bps, &src_max_bps) == MEDIA_FORMAT_ERROR_NONE) {
@@ -1175,10 +1173,10 @@ static int __mm_util_transform_exec(mm_util_s * handle, media_packet_h src_packe
 		} else {
 			mm_util_error("[Error] handle->src");
 			media_format_unref(src_fmt);
-			return MM_ERROR_IMAGEHANDLE_NOT_INITIALIZED;
+			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 
-		if(media_packet_get_buffer_size(handle->src_packet, &size) == MM_ERROR_NONE) {
+		if(media_packet_get_buffer_size(handle->src_packet, &size) == MM_UTIL_ERROR_NONE) {
 			handle->src_buf_size = (guint)size;
 			mm_util_debug("src buffer(%p) %d size: %d", handle->src_packet, handle->src_packet, handle->src_buf_size);
 		} else {
@@ -1237,56 +1235,56 @@ static int __mm_util_transform_exec(mm_util_s * handle, media_packet_h src_packe
 		if(media_format_make_writable(src_fmt, &dst_fmt) != MEDIA_FORMAT_ERROR_NONE) {
 			media_format_unref(src_fmt);
 			mm_util_error("[Error] Writable - dst format");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
+			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 
 		if(media_format_set_video_mime(dst_fmt, handle->dst_format_mime) != MEDIA_FORMAT_ERROR_NONE) {
 			media_format_unref(src_fmt);
 			media_format_unref(dst_fmt);
 			mm_util_error("[Error] Set - video mime");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
+			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 
 		if(media_format_set_video_width(dst_fmt, dst_width) != MEDIA_FORMAT_ERROR_NONE) {
 			media_format_unref(src_fmt);
 			media_format_unref(dst_fmt);
 			mm_util_error("[Error] Set - video width");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
+			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 
 		if(media_format_set_video_height(dst_fmt, dst_height) != MEDIA_FORMAT_ERROR_NONE) {
 			media_format_unref(src_fmt);
 			media_format_unref(dst_fmt);
 			mm_util_error("[Error] Set - video height");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
+			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 
 		if(media_format_set_video_avg_bps(dst_fmt, src_avg_bps) != MEDIA_FORMAT_ERROR_NONE) {
 			media_format_unref(src_fmt);
 			media_format_unref(dst_fmt);
 			mm_util_error("[Error] Set - video avg bps");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
+			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 
 		if(media_format_set_video_max_bps(dst_fmt, src_max_bps) != MEDIA_FORMAT_ERROR_NONE) {
 			media_format_unref(src_fmt);
 			media_format_unref(dst_fmt);
 			mm_util_error("[Error] Set - video max bps");
-			return MM_ERROR_IMAGE_INVALID_VALUE;
+			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 
-		if(media_packet_create_alloc(dst_fmt, (media_packet_finalize_cb)_mm_util_transform_packet_finalize_callback, NULL, &handle->dst_packet) != MM_ERROR_NONE) {
+		if(media_packet_create_alloc(dst_fmt, (media_packet_finalize_cb)_mm_util_transform_packet_finalize_callback, NULL, &handle->dst_packet) != MM_UTIL_ERROR_NONE) {
 			mm_util_error("[Error] Create allocation memory");
 			media_format_unref(src_fmt);
 			media_format_unref(dst_fmt);
-			return MM_ERROR_IMAGE_INVALID_VALUE;
+			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		} else {
 			mm_util_debug("Success - dst media packet");
-			if(media_packet_get_buffer_size(handle->dst_packet, &size) != MM_ERROR_NONE) {
+			if(media_packet_get_buffer_size(handle->dst_packet, &size) != MM_UTIL_ERROR_NONE) {
 				mm_util_error("Imedia_packet_get_format)");
 				media_format_unref(src_fmt);
 				media_format_unref(dst_fmt);
-				return MM_ERROR_IMAGE_INVALID_VALUE;
+				return MM_UTIL_ERROR_INVALID_PARAMETER;
 			}
 			handle->dst_buf_size = (guint)size;
 			mm_util_debug("handle->src_packet: %p [%d] %d X %d (%d) => handle->dst_packet: %p [%d] %d X %d (%d)",
@@ -1296,15 +1294,15 @@ static int __mm_util_transform_exec(mm_util_s * handle, media_packet_h src_packe
 	}else {
 		mm_util_error("%d %d", src_width, src_height);
 		media_format_unref(src_fmt);
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	ret = __mm_util_processing(handle);
 
-	if(ret != MM_ERROR_NONE) {
+	if(ret != MM_UTIL_ERROR_NONE) {
 		mm_util_error("__mm_util_processing failed");
 		IMGP_FREE(handle);
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	media_format_unref(src_fmt);
@@ -1316,11 +1314,11 @@ static int __mm_util_transform_exec(mm_util_s * handle, media_packet_h src_packe
 static int
 _mm_util_handle_finalize(mm_util_s *handle)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 
 	if (!handle) {
 		mm_util_error("[ERROR] - handle");
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	/* g_thread_exit(handle->thread); */
@@ -1350,32 +1348,32 @@ _mm_util_handle_finalize(mm_util_s *handle)
 
 int mm_util_create(MMHandleType* MMHandle)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:CREATE");
 
 	if(MMHandle == NULL) {
 		mm_util_error ("Invalid arguments [tag null]");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	mm_util_s *handle = calloc(1,sizeof(mm_util_s));
 	if (!handle) {
 		mm_util_error("[ERROR] - _handle");
-		ret = MM_ERROR_IMAGE_INTERNAL;
+		ret = MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	ret = __mm_util_handle_init (handle);
-	if(ret != MM_ERROR_NONE) {
+	if(ret != MM_UTIL_ERROR_NONE) {
 		mm_util_error("_mm_util_handle_init failed");
 		IMGP_FREE(handle);
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	ret = __mm_util_create_thread(handle);
-	if(ret != MM_ERROR_NONE) {
+	if(ret != MM_UTIL_ERROR_NONE) {
 		mm_util_error("ERROR - Create thread");
 		TTRACE_END();
 		return ret;
@@ -1391,7 +1389,7 @@ int mm_util_create(MMHandleType* MMHandle)
 
 int mm_util_set_hardware_acceleration(MMHandleType MMHandle, bool mode)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	mm_util_s *handle = (mm_util_s *) MMHandle;
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:SET_HARDWARE_ACCELERATION");
@@ -1399,7 +1397,7 @@ int mm_util_set_hardware_acceleration(MMHandleType MMHandle, bool mode)
 	if (!handle) {
 		mm_util_error("[ERROR] - handle");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	handle->hardware_acceleration = mode;
@@ -1410,14 +1408,14 @@ int mm_util_set_hardware_acceleration(MMHandleType MMHandle, bool mode)
 
 int mm_util_set_colorspace_convert(MMHandleType MMHandle, mm_util_img_format colorspace)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	mm_util_s *handle = (mm_util_s *) MMHandle;
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:SET_HARDWARE_ACCELERATION");
 
 	if (!handle) {
 		mm_util_error("[ERROR] - handle");
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	handle->set_convert = TRUE;
@@ -1431,14 +1429,14 @@ int mm_util_set_colorspace_convert(MMHandleType MMHandle, mm_util_img_format col
 
 int mm_util_set_resolution(MMHandleType MMHandle, unsigned int width, unsigned int height)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	mm_util_s *handle = (mm_util_s *) MMHandle;
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:SET_RESOLUTION");
 
 	if (!handle) {
 		mm_util_error("[ERROR] - handle");
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	handle->set_resize = TRUE;
@@ -1451,7 +1449,7 @@ int mm_util_set_resolution(MMHandleType MMHandle, unsigned int width, unsigned i
 
 int mm_util_set_rotation(MMHandleType MMHandle, mm_util_img_rotate_type rotation)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	mm_util_s *handle = (mm_util_s *) MMHandle;
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:SET_ROTATION");
@@ -1459,7 +1457,7 @@ int mm_util_set_rotation(MMHandleType MMHandle, mm_util_img_rotate_type rotation
 	if (!handle) {
 		mm_util_error("[ERROR] - handle");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	handle->set_rotate = TRUE;
@@ -1471,7 +1469,7 @@ int mm_util_set_rotation(MMHandleType MMHandle, mm_util_img_rotate_type rotation
 
 int mm_util_set_crop_area(MMHandleType MMHandle, unsigned int start_x, unsigned int start_y, unsigned int end_x, unsigned int end_y)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	mm_util_s *handle = (mm_util_s *) MMHandle;
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:SET_CROP_AREA");
@@ -1482,7 +1480,7 @@ int mm_util_set_crop_area(MMHandleType MMHandle, unsigned int start_x, unsigned 
 	if (!handle) {
 		mm_util_error("[ERROR] - handle");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	handle->set_crop = TRUE;
@@ -1497,7 +1495,7 @@ int mm_util_set_crop_area(MMHandleType MMHandle, unsigned int start_x, unsigned 
 
 int mm_util_transform(MMHandleType MMHandle, media_packet_h src_packet, mm_util_completed_callback completed_callback, void * user_data)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	mm_util_s *handle = (mm_util_s *) MMHandle;
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:TRANSFORM");
@@ -1505,13 +1503,13 @@ int mm_util_transform(MMHandleType MMHandle, media_packet_h src_packet, mm_util_
 	if (!handle) {
 		mm_util_error("[ERROR] - handle");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	if(!src_packet) {
 		mm_util_error("[ERROR] - src_packet");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	} else {
 		mm_util_debug("src: %p", src_packet);
 	}
@@ -1519,7 +1517,7 @@ int mm_util_transform(MMHandleType MMHandle, media_packet_h src_packet, mm_util_
 	if(!completed_callback) {
 		mm_util_error("[ERROR] - completed_callback");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	IMGP_FREE(handle->_util_cb);
@@ -1546,7 +1544,7 @@ int mm_util_transform(MMHandleType MMHandle, media_packet_h src_packet, mm_util_
 
 int mm_util_transform_is_completed(MMHandleType MMHandle, bool *is_completed)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 
 	mm_util_s *handle = (mm_util_s *) MMHandle;
 
@@ -1555,13 +1553,13 @@ int mm_util_transform_is_completed(MMHandleType MMHandle, bool *is_completed)
 	if (!handle) {
 		mm_util_error("[ERROR] - handle");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	if (!is_completed) {
 		mm_util_error("[ERROR] - is_completed");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	*is_completed = handle->is_completed;
@@ -1573,7 +1571,7 @@ int mm_util_transform_is_completed(MMHandleType MMHandle, bool *is_completed)
 
 int mm_util_destroy(MMHandleType MMHandle)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	mm_util_s *handle = (mm_util_s*) MMHandle;
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:DESTROY");
@@ -1581,14 +1579,14 @@ int mm_util_destroy(MMHandleType MMHandle)
 	if (!handle) {
 		mm_util_error("[ERROR] - handle");
 		TTRACE_END();
-		return MM_ERROR_IMAGEHANDLE_NOT_INITIALIZED;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	/* Close */
-	if(_mm_util_handle_finalize(handle) != MM_ERROR_NONE) {
+	if(_mm_util_handle_finalize(handle) != MM_UTIL_ERROR_NONE) {
 		mm_util_error("_mm_util_handle_finalize)");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	IMGP_FREE(handle->_util_cb);
@@ -1601,7 +1599,7 @@ int mm_util_destroy(MMHandleType MMHandle)
 
 EXPORT_API int mm_util_convert_colorspace(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format, unsigned char *dst, mm_util_img_format dst_format)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	unsigned char *output_buffer = NULL;
 	unsigned int output_buffer_size = 0;
 
@@ -1612,19 +1610,19 @@ EXPORT_API int mm_util_convert_colorspace(const unsigned char *src, unsigned int
 	if (!src || !dst) {
 		mm_util_error("invalid src or dst");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	if ((src_format < MM_UTIL_IMG_FMT_YUV420) || (src_format > MM_UTIL_IMG_FMT_NUM) || (dst_format < MM_UTIL_IMG_FMT_YUV420) || (dst_format > MM_UTIL_IMG_FMT_NUM)) {
 		mm_util_error("#ERROR# src_format : [%d] dst_format : [%d] value ", src_format, dst_format);
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	if (__mm_cannot_convert_format(src_format, dst_format)) {
 		mm_util_error("#ERROR# Cannot Support Image Format Convert");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+		return MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
 	}
 
 	mm_util_debug("[src] 0x%2x (%d x %d) [dst] 0x%2x", src, src_width, src_height, dst);
@@ -1633,7 +1631,7 @@ EXPORT_API int mm_util_convert_colorspace(const unsigned char *src, unsigned int
 	if (_imgp_info_s == NULL) {
 		mm_util_error("ERROR - alloc handle");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_NO_FREE_SPACE;
+		return MM_UTIL_ERROR_OUT_OF_MEMORY;
 	}
 
 	IMGPInfoFunc _mm_util_imgp_func = NULL;
@@ -1660,16 +1658,16 @@ EXPORT_API int mm_util_convert_colorspace(const unsigned char *src, unsigned int
 	mm_util_debug("mm_util_imgp_func: %p", _module);
 
 	ret = __mm_set_imgp_info_s(_imgp_info_s, src_format, src_width, src_height, dst_format, src_width, src_height, MM_UTIL_ROTATE_0);
-	if(ret != MM_ERROR_NONE) {
+	if(ret != MM_UTIL_ERROR_NONE) {
 		mm_util_error("__mm_set_imgp_info_s failed");
 		__mm_util_imgp_finalize(_module, _imgp_info_s);
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 	mm_util_debug("Sucess __mm_set_imgp_info_s");
 
 	ret = __mm_util_get_buffer_size(dst_format, src_width, src_height, &output_buffer_size);
-	if (ret != MM_ERROR_NONE) {
+	if (ret != MM_UTIL_ERROR_NONE) {
 		mm_util_error("__mm_set_imgp_info_s failed");
 		__mm_util_imgp_finalize(_module, _imgp_info_s);
 		TTRACE_END();
@@ -1681,7 +1679,7 @@ EXPORT_API int mm_util_convert_colorspace(const unsigned char *src, unsigned int
 		mm_util_error("malloc failed");
 		__mm_util_imgp_finalize(_module, _imgp_info_s);
 		TTRACE_END();
-		return MM_ERROR_IMAGE_NO_FREE_SPACE;
+		return MM_UTIL_ERROR_OUT_OF_MEMORY;
 	}
 	mm_util_debug("malloc outputbuffer: %p (%d)", output_buffer, output_buffer_size);
 
@@ -1691,7 +1689,7 @@ EXPORT_API int mm_util_convert_colorspace(const unsigned char *src, unsigned int
 
 	if (_mm_util_imgp_func) {
 		ret=_mm_util_imgp_func(_imgp_info_s, src, output_buffer, IMGP_CSC);
-		if (ret != MM_ERROR_NONE)
+		if (ret != MM_UTIL_ERROR_NONE)
 		{
 			mm_util_error("image processing failed");
 			__mm_util_imgp_finalize(_module, _imgp_info_s);
@@ -1704,16 +1702,16 @@ EXPORT_API int mm_util_convert_colorspace(const unsigned char *src, unsigned int
 		__mm_util_imgp_finalize(_module, _imgp_info_s);
 		IMGP_FREE(output_buffer);
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	if ((_imgp_info_s->dst_width != _imgp_info_s->output_stride || _imgp_info_s->dst_height != _imgp_info_s->output_elevation) && __mm_is_rgb_format(src_format)) {
 		ret = mm_util_crop_image(output_buffer, _imgp_info_s->output_stride, _imgp_info_s->output_elevation, dst_format, 0, 0, &_imgp_info_s->dst_width, &_imgp_info_s->dst_height, dst);
-		if(ret != MM_ERROR_NONE) {
+		if(ret != MM_UTIL_ERROR_NONE) {
 			mm_util_error("__mm_util_imgp_finalize failed");
 			IMGP_FREE(output_buffer);
 			TTRACE_END();
-			return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+			return MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
 		}
 	} else {
 		memcpy(dst, output_buffer, _imgp_info_s->buffer_size);
@@ -1725,11 +1723,11 @@ EXPORT_API int mm_util_convert_colorspace(const unsigned char *src, unsigned int
 
 	/* Finalize */
 	ret = __mm_util_imgp_finalize(_module, _imgp_info_s);
-	if(ret != MM_ERROR_NONE) {
+	if(ret != MM_UTIL_ERROR_NONE) {
 		mm_util_error("__mm_util_imgp_finalize failed");
 		IMGP_FREE(output_buffer);
 		TTRACE_END();
-		return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+		return MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
 	}
 
 	IMGP_FREE(output_buffer);
@@ -1743,7 +1741,7 @@ EXPORT_API int mm_util_convert_colorspace(const unsigned char *src, unsigned int
 
 EXPORT_API int mm_util_resize_image(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format, unsigned char *dst, unsigned int *dst_width, unsigned int *dst_height)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	unsigned char *output_buffer = NULL;
 	unsigned int output_buffer_size = 0;
 
@@ -1754,25 +1752,25 @@ EXPORT_API int mm_util_resize_image(const unsigned char *src, unsigned int src_w
 	if (!src || !dst) {
 		mm_util_error("invalid argument");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	if ((src_format < MM_UTIL_IMG_FMT_YUV420) || (src_format > MM_UTIL_IMG_FMT_NUM)) {
 		mm_util_error("#ERROR# src_format value ");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	if (!dst_width || !dst_height ) {
 		mm_util_error("#ERROR# dst width/height buffer is NULL");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	if (!src_width || !src_height) {
 		mm_util_error("#ERROR# src_width || src_height valuei is 0 ");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	mm_util_debug("[src] 0x%2x (%d x %d) [dst] 0x%2x", src, src_width, src_height, dst);
@@ -1781,7 +1779,7 @@ EXPORT_API int mm_util_resize_image(const unsigned char *src, unsigned int src_w
 	if(_imgp_info_s == NULL) {
 		mm_util_error("ERROR - alloc handle");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_NO_FREE_SPACE;
+		return MM_UTIL_ERROR_OUT_OF_MEMORY;
 	}
 
 	IMGPInfoFunc _mm_util_imgp_func = NULL;
@@ -1807,11 +1805,11 @@ EXPORT_API int mm_util_resize_image(const unsigned char *src, unsigned int src_w
 
 	mm_util_debug("__mm_set_imgp_info_s");
 	ret =__mm_set_imgp_info_s(_imgp_info_s, src_format, src_width, src_height, src_format, *dst_width, *dst_height, MM_UTIL_ROTATE_0);
-	if(ret != MM_ERROR_NONE) {
+	if(ret != MM_UTIL_ERROR_NONE) {
 		mm_util_error("__mm_set_imgp_info_s failed [%d]", ret);
 		__mm_util_imgp_finalize(_module, _imgp_info_s);
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	mm_util_debug("Sucess __mm_set_imgp_info_s");
@@ -1821,12 +1819,12 @@ EXPORT_API int mm_util_resize_image(const unsigned char *src, unsigned int src_w
 			mm_util_error("[%s][%05d] #RESIZE ERROR# IMAGE_NOT_SUPPORT_FORMAT");
 			__mm_util_imgp_finalize(_module, _imgp_info_s);
 			TTRACE_END();
-			return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+			return MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
 		}
 	}
 
 	ret = __mm_util_get_buffer_size(src_format, *dst_width, *dst_height, &output_buffer_size);
-	if (ret != MM_ERROR_NONE) {
+	if (ret != MM_UTIL_ERROR_NONE) {
 		mm_util_error("__mm_set_imgp_info_s failed");
 		__mm_util_imgp_finalize(_module, _imgp_info_s);
 		TTRACE_END();
@@ -1838,7 +1836,7 @@ EXPORT_API int mm_util_resize_image(const unsigned char *src, unsigned int src_w
 		mm_util_error("malloc failed");
 		__mm_util_imgp_finalize(_module, _imgp_info_s);
 		TTRACE_END();
-		return MM_ERROR_IMAGE_NO_FREE_SPACE;
+		return MM_UTIL_ERROR_OUT_OF_MEMORY;
 	}
 
 	mm_util_debug("malloc outputbuffer: %p (%d)", output_buffer, output_buffer_size);
@@ -1849,7 +1847,7 @@ EXPORT_API int mm_util_resize_image(const unsigned char *src, unsigned int src_w
 	if (_mm_util_imgp_func) {
 		ret=_mm_util_imgp_func(_imgp_info_s, src, output_buffer, IMGP_RSZ);
 		mm_util_debug("_mm_util_imgp_func, ret: %d", ret);
-		if (ret != MM_ERROR_NONE)
+		if (ret != MM_UTIL_ERROR_NONE)
 		{
 			mm_util_error("image processing failed");
 			__mm_util_imgp_finalize(_module, _imgp_info_s);
@@ -1862,7 +1860,7 @@ EXPORT_API int mm_util_resize_image(const unsigned char *src, unsigned int src_w
 		__mm_util_imgp_finalize(_module, _imgp_info_s);
 		IMGP_FREE(output_buffer);
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	if ((_imgp_info_s->dst_width != _imgp_info_s->output_stride || _imgp_info_s->dst_height != _imgp_info_s->output_elevation) && __mm_is_rgb_format(src_format)) {
@@ -1881,11 +1879,11 @@ EXPORT_API int mm_util_resize_image(const unsigned char *src, unsigned int src_w
 
 	/* Finalize */
 	ret = __mm_util_imgp_finalize(_module, _imgp_info_s);
-	if(ret != MM_ERROR_NONE) {
+	if(ret != MM_UTIL_ERROR_NONE) {
 		mm_util_error("__mm_util_imgp_finalize failed");
 		IMGP_FREE(output_buffer);
 		TTRACE_END();
-		return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+		return MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
 	}
 
 	IMGP_FREE(output_buffer);
@@ -1899,7 +1897,7 @@ EXPORT_API int mm_util_resize_image(const unsigned char *src, unsigned int src_w
 
 EXPORT_API int mm_util_rotate_image(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format, unsigned char *dst, unsigned int *dst_width, unsigned int *dst_height, mm_util_img_rotate_type angle)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	unsigned char *output_buffer = NULL;
 	unsigned int output_buffer_size = 0;
 
@@ -1910,31 +1908,31 @@ EXPORT_API int mm_util_rotate_image(const unsigned char *src, unsigned int src_w
 	if (!src || !dst) {
 		mm_util_error("invalid argument");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	if ((src_format < MM_UTIL_IMG_FMT_YUV420) || (src_format > MM_UTIL_IMG_FMT_NUM)) {
 		mm_util_error("#ERROR# src_format value");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	if ( !dst_width || !dst_height ) {
 		mm_util_error("#ERROR# dst width/height buffer is NUL");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	if ( !src_width || !src_height) {
 		mm_util_error("#ERROR# src_width || src_height value is 0 ");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	if ((angle < MM_UTIL_ROTATE_0) || (angle > MM_UTIL_ROTATE_NUM)) {
 		mm_util_error("#ERROR# angle vaule");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	mm_util_debug("[src] 0x%2x (%d x %d) [dst] 0x%2x", src, src_width, src_height, dst);
@@ -1943,7 +1941,7 @@ EXPORT_API int mm_util_rotate_image(const unsigned char *src, unsigned int src_w
 	if(_imgp_info_s == NULL) {
 		mm_util_error("ERROR - alloc handle");
 		TTRACE_END();
-		return MM_ERROR_IMAGEHANDLE_NOT_INITIALIZED;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 	IMGPInfoFunc _mm_util_imgp_func = NULL;
 	GModule *_module = NULL;
@@ -1967,20 +1965,20 @@ EXPORT_API int mm_util_rotate_image(const unsigned char *src, unsigned int src_w
 
 	mm_util_debug("__mm_confirm_dst_width_height");
 	ret = __mm_confirm_dst_width_height(src_width, src_height, dst_width, dst_height, angle);
-	if(ret != MM_ERROR_NONE) {
+	if(ret != MM_UTIL_ERROR_NONE) {
 		mm_util_error("dst_width || dest_height size Error");
 		__mm_util_imgp_finalize(_module, _imgp_info_s);
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	ret = __mm_set_imgp_info_s(_imgp_info_s, src_format, src_width, src_height, src_format, *dst_width, *dst_height, angle);
 	mm_util_debug("__mm_set_imgp_info_s");
-	if(ret != MM_ERROR_NONE) {
+	if(ret != MM_UTIL_ERROR_NONE) {
 		mm_util_error("__mm_set_imgp_info_s failed");
 		__mm_util_imgp_finalize(_module, _imgp_info_s);
 		TTRACE_END();
-		return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+		return MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
 	}
 	mm_util_debug("Sucess __mm_set_imgp_info_s");
 
@@ -1989,12 +1987,12 @@ EXPORT_API int mm_util_rotate_image(const unsigned char *src, unsigned int src_w
 			mm_util_error("[%s][%05d] #gstreamer ROTATE ERROR# IMAGE_NOT_SUPPORT_FORMAT");
 			__mm_util_imgp_finalize(_module, _imgp_info_s);
 			TTRACE_END();
-			return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+			return MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
 		}
 	}
 
 	ret = __mm_util_get_buffer_size(src_format, *dst_width, *dst_height, &output_buffer_size);
-	if (ret != MM_ERROR_NONE) {
+	if (ret != MM_UTIL_ERROR_NONE) {
 		mm_util_error("__mm_set_imgp_info_s failed");
 		__mm_util_imgp_finalize(_module, _imgp_info_s);
 		TTRACE_END();
@@ -2006,7 +2004,7 @@ EXPORT_API int mm_util_rotate_image(const unsigned char *src, unsigned int src_w
 		mm_util_error("malloc failed");
 		__mm_util_imgp_finalize(_module, _imgp_info_s);
 		TTRACE_END();
-		return MM_ERROR_IMAGE_NO_FREE_SPACE;
+		return MM_UTIL_ERROR_OUT_OF_MEMORY;
 	}
 
 	mm_util_debug("malloc outputbuffer: %p (%d)", output_buffer, output_buffer_size);
@@ -2016,7 +2014,7 @@ EXPORT_API int mm_util_rotate_image(const unsigned char *src, unsigned int src_w
 	mm_util_debug("Sucess __mm_util_imgp_process");
 	if (_mm_util_imgp_func) {
 		ret=_mm_util_imgp_func(_imgp_info_s, src, output_buffer, IMGP_ROT);
-		if (ret!= MM_ERROR_NONE) 	{
+		if (ret!= MM_UTIL_ERROR_NONE) 	{
 			mm_util_error("image processing failed");
 			__mm_util_imgp_finalize(_module, _imgp_info_s);
 			IMGP_FREE(output_buffer);
@@ -2028,7 +2026,7 @@ EXPORT_API int mm_util_rotate_image(const unsigned char *src, unsigned int src_w
 		__mm_util_imgp_finalize(_module, _imgp_info_s);
 		IMGP_FREE(output_buffer);
 		TTRACE_END();
-		return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+		return MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
 	}
 
 	if ((_imgp_info_s->dst_width != _imgp_info_s->output_stride || _imgp_info_s->dst_height != _imgp_info_s->output_elevation) && __mm_is_rgb_format(src_format)) {
@@ -2059,11 +2057,11 @@ EXPORT_API int mm_util_rotate_image(const unsigned char *src, unsigned int src_w
 
 	/* Finalize */
 	ret = __mm_util_imgp_finalize(_module, _imgp_info_s);
-	if(ret != MM_ERROR_NONE) {
+	if(ret != MM_UTIL_ERROR_NONE) {
 		mm_util_error("__mm_util_imgp_finalize failed");
 		IMGP_FREE(output_buffer);
 		TTRACE_END();
-		return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+		return MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
 	}
 
 	IMGP_FREE(output_buffer);
@@ -2078,26 +2076,26 @@ EXPORT_API int mm_util_rotate_image(const unsigned char *src, unsigned int src_w
 EXPORT_API int mm_util_crop_image(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
 unsigned int crop_start_x, unsigned int crop_start_y, unsigned int *crop_dest_width, unsigned int *crop_dest_height, unsigned char *dst)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:CROP_IMAGE");
 
 	if (!src || !dst) {
 		mm_util_error("invalid argument");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	if( (src_format < MM_UTIL_IMG_FMT_YUV420) || (src_format > MM_UTIL_IMG_FMT_NUM) ) {
 		mm_util_error("#ERROR# src_format value");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	if( (crop_start_x +*crop_dest_width > src_width) || (crop_start_y +*crop_dest_height > src_height) ) {
 		mm_util_error("#ERROR# dest width | height value");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	switch (src_format) {
@@ -2119,13 +2117,13 @@ unsigned int crop_start_x, unsigned int crop_start_y, unsigned int *crop_dest_wi
 		case MM_UTIL_IMG_FMT_I420:
 		case MM_UTIL_IMG_FMT_YUV420: {
 			if((*crop_dest_width %2) !=0) {
-				debug_warning("#YUV Width value(%d) must be even at least# ", *crop_dest_width);
+				mm_util_warn("#YUV Width value(%d) must be even at least# ", *crop_dest_width);
 				*crop_dest_width = ((*crop_dest_width+1)>>1)<<1;
 				mm_util_debug("Image isplay is suceeded when YUV crop width value %d ",*crop_dest_width);
 			}
 
 			if((*crop_dest_height%2) !=0) { /* height value must be also even when crop yuv image */
-				debug_warning("#YUV Height value(%d) must be even at least# ", *crop_dest_height);
+				mm_util_warn("#YUV Height value(%d) must be even at least# ", *crop_dest_height);
 				*crop_dest_height = ((*crop_dest_height+1)>>1)<<1;
 				mm_util_debug("Image isplay is suceeded when YUV crop height value %d ",*crop_dest_height);
 			}
@@ -2135,7 +2133,7 @@ unsigned int crop_start_x, unsigned int crop_start_y, unsigned int *crop_dest_wi
 			}
 		default:
 			mm_util_debug("Not supported format");
-			ret = MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+			ret = MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
 	}
 
 	TTRACE_END();
@@ -2144,7 +2142,7 @@ unsigned int crop_start_x, unsigned int crop_start_y, unsigned int *crop_dest_wi
 
 EXPORT_API int mm_util_get_image_size(mm_util_img_format format, unsigned int width, unsigned int height, unsigned int *imgsize)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	unsigned char x_chroma_shift = 0;
 	unsigned char y_chroma_shift = 0;
 	int size, w2, h2, size2;
@@ -2155,7 +2153,7 @@ EXPORT_API int mm_util_get_image_size(mm_util_img_format format, unsigned int wi
 	if (!imgsize) {
 		mm_util_error("imgsize can't be null");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_FILEOPEN;
+		return MM_UTIL_ERROR_NO_SUCH_FILE;
 	}
 
 	*imgsize = 0;
@@ -2163,7 +2161,7 @@ EXPORT_API int mm_util_get_image_size(mm_util_img_format format, unsigned int wi
 	if (check_valid_picture_size(width, height) < 0) {
 		mm_util_error("invalid width and height");
 		TTRACE_END();
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	switch (format)
@@ -2230,7 +2228,7 @@ EXPORT_API int mm_util_get_image_size(mm_util_img_format format, unsigned int wi
 		default:
 			mm_util_error("Not supported format");
 			TTRACE_END();
-			return MM_ERROR_IMAGE_NOT_SUPPORT_FORMAT;
+			return MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
 	}
 	mm_util_debug("format: %d, *imgsize: %d\n", format, *imgsize);
 

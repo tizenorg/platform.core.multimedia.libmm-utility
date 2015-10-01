@@ -27,7 +27,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <mm_util_jpeg.h>
-#include <mm_error.h>
+#include <mm_util_imgp.h>
 #include <tzplatform_config.h>
 
 #define ENCODE_RESULT_PATH tzplatform_mkpath(TZ_USER_CONTENT, "encode_test.jpg")
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
 
 			ret = mm_util_jpeg_encode_to_memory(&dst, &dst_size, src, width, height, fmt, quality);
 		} else {
-			ret = MM_ERROR_IMAGE_INTERNAL;
+			ret = MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 	} else if (!strcmp("enc2file", argv[1])) {
 		if (_read_file(argv[2], &src, &src_size)) {
@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
 
 			ret = mm_util_jpeg_encode_to_file(ENCODE_RESULT_PATH, src, width, height, fmt, quality);
 		} else {
-			ret = MM_ERROR_IMAGE_INTERNAL;
+			ret = MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 	} else if (!strcmp("decode", argv[1])) {
 		if (_read_file(argv[2], &src, &src_size)) {
@@ -183,7 +183,7 @@ int main(int argc, char *argv[])
 			free(src);
 			src = NULL;
 		} else {
-			ret = MM_ERROR_IMAGE_INTERNAL;
+			ret = MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 	} else if (!strcmp("decode_ds", argv[1])) {
 		if (_read_file(argv[2], &src, &src_size)) {
@@ -194,14 +194,14 @@ int main(int argc, char *argv[])
 			free(src);
 			src = NULL;
 		} else {
-			ret = MM_ERROR_IMAGE_INTERNAL;
+			ret = MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 	} else {
 		fprintf(stderr, "\tunknown command [%s]\n", argv[1]);
 		return 0;
 	}
 
-	if (ret != MM_ERROR_NONE) {
+	if (ret != MM_UTIL_ERROR_NONE) {
 		fprintf(stderr, "\tERROR is occurred %x\n", ret);
 	}else {
 		fprintf(stderr, "\tJPEG OPERATION SUCCESS\n");

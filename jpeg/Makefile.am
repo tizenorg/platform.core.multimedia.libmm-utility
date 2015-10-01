@@ -22,7 +22,7 @@ libmmutil_jpeg_la_LIBADD = $(MMCOMMON_LIBS) -ljpeg -ldl -lexif -lttrace\
 				$(SYSTEMINFO_LIBS)\
 				$(MEDIA_LIBS)
 
-libmmutil_jpeg_la_CFLAGS += $(MMLOG_CFLAGS) -DMMF_LOG_OWNER=0x0100 -DMMF_DEBUG_PREFIX=\"MMF-IMAGE\" -DLIBPREFIX=\"$(libdir)\"
+libmmutil_jpeg_la_CFLAGS += -DLIBPREFIX=\"$(libdir)\"
 
 libmmutil_jpeg_la_DEPENDENCIES = $(srcdir)/../imgp/libmmutil_imgp.la
 
