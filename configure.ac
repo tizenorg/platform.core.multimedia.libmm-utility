@@ -57,6 +57,10 @@ PKG_CHECK_MODULES(TBM, libtbm)
 AC_SUBST(TBM_CFLAGS)
 AC_SUBST(TBM_LIBS)
 
+PKG_CHECK_MODULES(OPENCV, opencv)
+AC_SUBST(OPENCV_CFLAGS)
+AC_SUBST(OPENCV_LIBS)
+
 PKG_CHECK_MODULES(SYSTEMINFO, capi-system-info)
 AC_SUBST(SYSTEMINFO_CFLAGS)
 AC_SUBST(SYSTEMINFO_LIBS)
@@ -76,6 +80,9 @@ AC_CONFIG_FILES([Makefile
 		 jpeg/Makefile
 		 jpeg/test/Makefile
 		 jpeg/mmutil-jpeg.pc
+		 imgcv/Makefile
+		 imgcv/test/Makefile
+		 imgcv/mmutil-imgcv.pc
 		 test/Makefile
 ])
 

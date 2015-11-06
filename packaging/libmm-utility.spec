@@ -1,6 +1,6 @@
 Name:       libmm-utility
 Summary:    Multimedia Framework Utility Library
-Version:    0.16
+Version:    0.17
 Release:    0
 Group:      System/Libraries
 License:    Apache-2.0
@@ -17,6 +17,7 @@ BuildRequires:  pkgconfig(libtzplatform-config)
 BuildRequires:  pkgconfig(capi-media-tool)
 BuildRequires:  pkgconfig(libtbm)
 BuildRequires:  pkgconfig(libexif)
+BuildRequires:  pkgconfig(opencv)
 BuildRequires:  pkgconfig(capi-system-info)
 BuildRequires:  pkgconfig(ttrace)
 BuildRoot:  %{_tmppath}/%{name}-%{version}-build
@@ -57,6 +58,7 @@ LDFLAGS="$LDFLAGS -Wl,--rpath=%{_libdir} -Wl,--hash-style=both -Wl,--as-needed" 
 
 sed -i -e "s#@IMGP_REQPKG@#$IMGP_REQPKG#g" imgp/mmutil-imgp.pc
 sed -i -e "s#@JPEG_REQPKG@#$JPEG_REQPKG#g" jpeg/mmutil-jpeg.pc
+sed -i -e "s#@IMGCV_REQPKG@#$IMGCV_REQPKG#g" imgcv/mmutil-imgcv.pc
 
 %install
 rm -rf %{buildroot}

@@ -5,11 +5,12 @@ ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = \
 	imgp \
-	jpeg 
-	
+	jpeg \
+	imgcv
 DIST_SUBDIRS = \
 	imgp \
-	jpeg 
+	jpeg \
+	imgcv
 
 EXTRA_DIST = \
 	configure.ac autogen.sh depcomp
