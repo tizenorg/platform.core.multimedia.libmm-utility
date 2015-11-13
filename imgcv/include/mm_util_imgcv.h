@@ -25,8 +25,6 @@
 extern "C" {
 #endif
 
-#include <mm_types.h>
-
 /**
     @addtogroup UTILITY
     @{

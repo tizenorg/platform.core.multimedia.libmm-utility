@@ -20,11 +20,11 @@
  */
 #include <limits.h>
 #include <math.h>
-#include <mm_debug.h>
+#include "mm_util_debug.h"
+#include "mm_util_imgp.h"
 #include "mm_util_imgcv.h"
 #include "mm_util_imgcv_internal.h"
 #include <gmodule.h>
-#include <mm_error.h>
 #ifdef ENABLE_TTRACE
 #include <ttrace.h>
 #define TTRACE_BEGIN(NAME) traceBegin(TTRACE_TAG_IMAGE, NAME)
@@ -48,14 +48,14 @@
 
 static int _mm_util_imgcv_init(mm_util_imgcv_s *handle, int width, int height)
 {
-	debug_log("Enter _mm_util_imgcv_init");
+	mm_util_debug("Enter _mm_util_imgcv_init");
 
 	handle->width = width;
 	handle->height = height;
 
 	handle->inImg = cvCreateImageHeader(cvSize(width, height), IPL_DEPTH_8U, RGB_COLOR_CHANNELS);
 	if (handle->inImg == NULL) {
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	handle->hBins = DEFAULT_NUM_HBINS;
@@ -73,44 +73,44 @@ static int _mm_util_imgcv_init(mm_util_imgcv_s *handle, int width, int height)
 	handle->vRanges[0] = 0;
 	handle->vRanges[1] = DEFAULT_RANGE_VALUE;
 
-	debug_log("Leave _mm_util_imgcv_uninit");
+	mm_util_debug("Leave _mm_util_imgcv_uninit");
 
-	return MM_ERROR_NONE;
+	return MM_UTIL_ERROR_NONE;
 }
 
 static void _mm_util_imgcv_uninit(mm_util_imgcv_s *handle)
 {
-	debug_log("Enter _mm_util_imgcv_uninit");
+	mm_util_debug("Enter _mm_util_imgcv_uninit");
 
 	if (handle->inImg != NULL) {
 		cvReleaseImageHeader(&handle->inImg);
 		handle->inImg = NULL;
 	}
 
-	debug_log("Leave _mm_util_imgcv_uninit");
+	mm_util_debug("Leave _mm_util_imgcv_uninit");
 }
 
 static int _mm_util_imgcv_set_buffer(mm_util_imgcv_s *handle, void *image_buffer)
 {
-	debug_log("Enter _mm_util_imgcv_set_buffer");
+	mm_util_debug("Enter _mm_util_imgcv_set_buffer");
 
 	unsigned char *buffer = (unsigned char *)image_buffer;
 
-	debug_log("image_buffer [%p], width [%d]", buffer, handle->width);
+	mm_util_debug("image_buffer [%p], width [%d]", buffer, handle->width);
 
 	cvSetData(handle->inImg, buffer, RGB_COLOR_CHANNELS*(handle->width));
 	if (handle->inImg == NULL) {
-		return	MM_ERROR_IMAGE_INTERNAL;
+		return	MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
-	debug_log("Leave _mm_util_imgcv_set_buffer");
+	mm_util_debug("Leave _mm_util_imgcv_set_buffer");
 
-	return MM_ERROR_NONE;
+	return MM_UTIL_ERROR_NONE;
 }
 
 static void _convert_hsv_to_rgb(int hVal, int sVal, int vVal, float *rVal, float *gVal, float *bVal)
 {
-	debug_log("Enter _convert_hsv_to_rgb");
+	mm_util_debug("Enter _convert_hsv_to_rgb");
 
 	CvMat *mat1 = cvCreateMat(1,1,CV_8UC3);
 	cvSet2D(mat1, 0, 0, cvScalar((double)hVal, (double)sVal, (double)vVal, 0.0));
@@ -124,15 +124,15 @@ static void _convert_hsv_to_rgb(int hVal, int sVal, int vVal, float *rVal, float
 	*gVal = (float)bgr.val[1];
 	*rVal = (float)bgr.val[2];
 
-	debug_log("from HSV[%f, %f, %f]", (float)hVal, (float)sVal, (float)vVal);
-	debug_log("to BGR[%f, %f, %f]", *bVal, *gVal, *rVal);
+	mm_util_debug("from HSV[%f, %f, %f]", (float)hVal, (float)sVal, (float)vVal);
+	mm_util_debug("to BGR[%f, %f, %f]", *bVal, *gVal, *rVal);
 
-	debug_log("Leave _convert_hsv_to_rgb");
+	mm_util_debug("Leave _convert_hsv_to_rgb");
 }
 
 static int _mm_util_imgcv_calculate_hist(mm_util_imgcv_s *handle, unsigned char *rgb_r, unsigned char *rgb_g, unsigned char *rgb_b)
 {
-	debug_log("Enter _mm_util_imgcv_calculate_hist");
+	mm_util_debug("Enter _mm_util_imgcv_calculate_hist");
 
 	int nh = 0;
 	int ns = 0;
@@ -155,8 +155,8 @@ static int _mm_util_imgcv_calculate_hist(mm_util_imgcv_s *handle, unsigned char 
 	IplImage *vImg = cvCreateImage(cvSize(handle->width, handle->height), IPL_DEPTH_8U, 1);
 
 	if (!hsvImg || !hImg || !sImg || !vImg) {
-		debug_error("fail to cvCreateImage()\n");
-		return MM_ERROR_IMAGE_INTERNAL;
+		mm_util_error("fail to cvCreateImage()\n");
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	IplImage *planes [] = {hImg, sImg, vImg};
@@ -170,7 +170,7 @@ static int _mm_util_imgcv_calculate_hist(mm_util_imgcv_s *handle, unsigned char 
 	/* create histogram*/
 	CvHistogram *hist = cvCreateHist(HISTOGRAM_CHANNELS, histsize, CV_HIST_ARRAY, ranges, 1);
 	if (hist == NULL) {
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	cvCalcHist(planes, hist, 0, NULL);
@@ -196,8 +196,8 @@ static int _mm_util_imgcv_calculate_hist(mm_util_imgcv_s *handle, unsigned char 
 
 	_convert_hsv_to_rgb(hVal, sVal, vVal, &rVal, &gVal, &bVal);
 
-	debug_log("nh[%d], ns[%d], nv[%d]\n", max_bin_idx[0], max_bin_idx[1], max_bin_idx[2]);
-	debug_log("h[%d], s[%d], v[%d]\n", hVal, sVal, vVal);
+	mm_util_debug("nh[%d], ns[%d], nv[%d]\n", max_bin_idx[0], max_bin_idx[1], max_bin_idx[2]);
+	mm_util_debug("h[%d], s[%d], v[%d]\n", hVal, sVal, vVal);
 	*rgb_r = rVal;
 	*rgb_g = gVal;
 	*rgb_b = bVal;
@@ -209,56 +209,56 @@ static int _mm_util_imgcv_calculate_hist(mm_util_imgcv_s *handle, unsigned char 
 
 	cvReleaseHist(&hist);
 
-	debug_log("Leave _mm_util_imgcv_calculate_hist");
+	mm_util_debug("Leave _mm_util_imgcv_calculate_hist");
 
-	return MM_ERROR_NONE;
+	return MM_UTIL_ERROR_NONE;
 }
 
 int mm_util_cv_extract_representative_color(void *image_buffer, int width, int height, unsigned char *r_color, unsigned char *g_color, unsigned char *b_color)
 {
-	debug_log("Enter mm_util_cv_extract_representative_color");
+	mm_util_debug("Enter mm_util_cv_extract_representative_color");
 	if (image_buffer == NULL) {
-		debug_error("#ERROR#: image buffer is NULL");
+		mm_util_error("#ERROR#: image buffer is NULL");
 
-		return MM_ERROR_IMAGE_INVALID_VALUE;
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	mm_util_imgcv_s *handle = (mm_util_imgcv_s *)malloc(sizeof(mm_util_imgcv_s));
 	if (handle == NULL) {
-		debug_error("#ERROR#: fail to create handle");
+		mm_util_error("#ERROR#: fail to create handle");
 
-		return MM_ERROR_IMAGE_NO_FREE_SPACE;
+		return MM_UTIL_ERROR_OUT_OF_MEMORY;
 	}
 
 	int ret = _mm_util_imgcv_init(handle, width, height);
-	if (ret != MM_ERROR_NONE) {
+	if (ret != MM_UTIL_ERROR_NONE) {
 		_mm_util_imgcv_uninit(handle);
 		free(handle);
 		handle = NULL;
 
-		debug_error("#ERROR#: Fail to mm_util_imgcv_init: ret=%d", ret);
+		mm_util_error("#ERROR#: Fail to mm_util_imgcv_init: ret=%d", ret);
 
 		return ret;
 	}
 
 	ret = _mm_util_imgcv_set_buffer(handle, image_buffer);
-	if (ret != MM_ERROR_NONE) {
+	if (ret != MM_UTIL_ERROR_NONE) {
 		_mm_util_imgcv_uninit(handle);
 		free(handle);
 		handle = NULL;
 
-		debug_error("#ERROR#: Fail to mm_util_imgcv_set_buffer: ret=%d", ret);
+		mm_util_error("#ERROR#: Fail to mm_util_imgcv_set_buffer: ret=%d", ret);
 
 		return ret;
 	}
 
 	ret = _mm_util_imgcv_calculate_hist(handle, r_color, g_color, b_color);
-	if (ret != MM_ERROR_NONE) {
+	if (ret != MM_UTIL_ERROR_NONE) {
 		_mm_util_imgcv_uninit(handle);
 		free(handle);
 		handle = NULL;
 
-		debug_error("#ERROR#: Fail to mm_util_imgcv_calculate_hist: ret=%d", ret);
+		mm_util_error("#ERROR#: Fail to mm_util_imgcv_calculate_hist: ret=%d", ret);
 
 		return ret;
 	}
@@ -268,7 +268,7 @@ int mm_util_cv_extract_representative_color(void *image_buffer, int width, int h
 	free(handle);
 	handle = NULL;
 
-	debug_log("Leave mm_util_cv_extract_representative_color");
+	mm_util_debug("Leave mm_util_cv_extract_representative_color");
 
-	return MM_ERROR_NONE;
+	return MM_UTIL_ERROR_NONE;
 }

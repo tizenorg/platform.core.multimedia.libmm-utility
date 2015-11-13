@@ -23,24 +23,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <glib.h>
-#include "mm_util_imgcv.h"
-
 #ifdef __cplusplus
 	extern "C" {
 #endif
-
-#include <gmodule.h>
-#include <mm_debug.h>
-#include <mm_types.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <time.h>
-#include <unistd.h>
-#include <stdint.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/ioctl.h>
 
 #include <opencv/cv.h>
 #include <opencv2/imgproc/imgproc_c.h>
