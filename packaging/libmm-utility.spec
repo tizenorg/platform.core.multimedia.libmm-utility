@@ -20,6 +20,8 @@ BuildRequires:  pkgconfig(libexif)
 BuildRequires:  pkgconfig(opencv)
 BuildRequires:  pkgconfig(capi-system-info)
 BuildRequires:  pkgconfig(ttrace)
+BuildRequires:  libpng-devel
+BuildRequires:  giflib-devel
 BuildRoot:  %{_tmppath}/%{name}-%{version}-build
 
 %description
@@ -59,6 +61,8 @@ LDFLAGS="$LDFLAGS -Wl,--rpath=%{_libdir} -Wl,--hash-style=both -Wl,--as-needed" 
 sed -i -e "s#@IMGP_REQPKG@#$IMGP_REQPKG#g" imgp/mmutil-imgp.pc
 sed -i -e "s#@JPEG_REQPKG@#$JPEG_REQPKG#g" jpeg/mmutil-jpeg.pc
 sed -i -e "s#@IMGCV_REQPKG@#$IMGCV_REQPKG#g" imgcv/mmutil-imgcv.pc
+sed -i -e "s#@PNG_REQPKG@#$PNG_REQPKG#g" png/mmutil-png.pc
+sed -i -e "s#@GIF_REQPKG@#$GIF_REQPKG#g" gif/mmutil-gif.pc
 
 %install
 rm -rf %{buildroot}

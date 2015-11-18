@@ -83,6 +83,12 @@ AC_CONFIG_FILES([Makefile
 		 imgcv/Makefile
 		 imgcv/test/Makefile
 		 imgcv/mmutil-imgcv.pc
+		 png/Makefile
+		 png/test/Makefile
+		 png/mmutil-png.pc
+		 gif/Makefile
+		 gif/test/Makefile
+		 gif/mmutil-gif.pc
 		 test/Makefile
 ])
 
