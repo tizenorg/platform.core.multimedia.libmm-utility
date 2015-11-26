@@ -35,6 +35,14 @@ extern "C" {
     This part describes the APIs with repect to multimedia image library.
 */
 
+/**
+ * format for gif
+ */
+typedef enum
+{
+	MM_UTIL_GIF_FMT_RGBA8888,     /**< RGBA8888 format */
+} mm_util_gif_format;
+
 typedef struct {
 	int delay_time;		   /**< pre-display delay in 0.01sec units */
 	void *data;		   /**< data */
