@@ -25,8 +25,6 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <mm_error.h>
-#include <mm_debug.h>
 #include <mm_util_png.h>
 
 #define DECODE_RESULT_PATH "/media/decode_test."
@@ -70,9 +68,9 @@ static int _read_file(char *file_name, void **data, int *data_size)
 			return FALSE;
 		} else {
 			if (fread(*data, 1, file_size, fp)) {
-				debug_log("#Success# fread");
+				fprintf(stderr, "\t#Success# fread\n");
 			} else {
-				debug_error("#Error# fread");
+				fprintf(stderr, "\t#Error# fread\n");
 				fclose(fp);
 				fp = NULL;
 				return FALSE;
@@ -89,7 +87,7 @@ static int _read_file(char *file_name, void **data, int *data_size)
 			return FALSE;
 		}
 	} else {
-		debug_error("#Error# ftell");
+		fprintf(stderr, "\t#Success# ftell\n");
 		fclose(fp);
 		fp = NULL;
 		return FALSE;
@@ -156,14 +154,14 @@ int main(int argc, char *argv[])
 			free(src);
 			src = NULL;
 		} else {
-			ret = MM_ERROR_IMAGE_INTERNAL;
+			ret = MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 	} else {
 		fprintf(stderr, "\tunknown command [%s]\n", argv[1]);
 		return 0;
 	}
 
-	if (ret != MM_ERROR_NONE) {
+	if (ret != MM_UTIL_ERROR_NONE) {
 		fprintf(stderr, "\tERROR is occurred %x\n", ret);
 	} else {
 		fprintf(stderr, "\tPNG OPERATION SUCCESS\n");

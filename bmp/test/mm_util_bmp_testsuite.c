@@ -25,8 +25,6 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <mm_error.h>
-#include <mm_debug.h>
 #include <mm_util_bmp.h>
 
 #define DECODE_RESULT_PATH "/opt/usr/media/decode_test."
@@ -56,7 +54,7 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	if (ret != MM_ERROR_NONE) {
+	if (ret != MM_UTIL_ERROR_NONE) {
 		fprintf(stderr, "\tERROR is occurred %x\n", ret);
 	} else {
 		fprintf(stderr, "\tBMP OPERATION SUCCESS\n");

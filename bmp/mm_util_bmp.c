@@ -19,7 +19,6 @@
  *
  */
 
-#include <mm_debug.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -33,13 +32,11 @@
 #include <errno.h>
 #include <stdio.h>				/* fopen() */
 #include <system_info.h>
-#include <mm_error.h>
 
 #include <glib.h>
-#include <mm_attrs.h>
-#include <mm_attrs_private.h>
 
 #include "mm_util_bmp.h"
+#include "mm_util_debug.h"
 
 #define BYTES_PER_PIXEL 4
 
@@ -58,12 +55,12 @@ unsigned char *load_file(const char *path, size_t * data_size)
 
 	fd = fopen(path, "rb");
 	if (!fd) {
-		debug_error("file open failed");
+		mm_util_error("file open failed");
 		return NULL;
 	}
 
 	if (stat(path, &sb)) {
-		debug_error("file stat failed");
+		mm_util_error("file stat failed");
 		fclose(fd);
 		return NULL;
 	}
@@ -71,14 +68,14 @@ unsigned char *load_file(const char *path, size_t * data_size)
 
 	buffer = malloc(size);
 	if (!buffer) {
-		debug_error("Unable to allocate %lld bytes", (long long)size);
+		mm_util_error("Unable to allocate %lld bytes", (long long)size);
 		fclose(fd);
 		return NULL;
 	}
 
 	n = fread(buffer, 1, size, fd);
 	if (n != size) {
-		debug_error("file read failed");
+		mm_util_error("file read failed");
 		free(buffer);
 		return NULL;
 	}
@@ -92,16 +89,16 @@ void print_error(const char *context, bmp_result code)
 {
 	switch (code) {
 	case BMP_INSUFFICIENT_MEMORY:
-		debug_error("%s failed: BMP_INSUFFICIENT_MEMORY", context);
+		mm_util_error("%s failed: BMP_INSUFFICIENT_MEMORY", context);
 		break;
 	case BMP_INSUFFICIENT_DATA:
-		debug_error("%s failed: BMP_INSUFFICIENT_DATA", context);
+		mm_util_error("%s failed: BMP_INSUFFICIENT_DATA", context);
 		break;
 	case BMP_DATA_ERROR:
-		debug_error("%s failed: BMP_DATA_ERROR", context);
+		mm_util_error("%s failed: BMP_DATA_ERROR", context);
 		break;
 	default:
-		debug_error("%s failed: unknown code %i", context, code);
+		mm_util_error("%s failed: unknown code %i", context, code);
 		break;
 	}
 }
@@ -137,19 +134,19 @@ static int read_bmp(mm_util_bmp_data * decoded, const char *filename, void *memo
 	bmp_result code;
 	bmp_image bmp;
 	size_t size;
-	int res = MM_ERROR_NONE;
+	int res = MM_UTIL_ERROR_NONE;
 	unsigned char *data = NULL;
 
 	if (filename) {
 		data = load_file(filename, &size);
 		if (data == NULL)
-			return MM_ERROR_IMAGE_INTERNAL;
+			return MM_UTIL_ERROR_INVALID_OPERATION;
 	} else if (memory) {
 		data = (unsigned char *)memory;
 		size = src_size;
 	} else {
-		debug_error("Bmp File wrong decode parameters");
-		return MM_ERROR_IMAGE_INTERNAL;
+		mm_util_error("Bmp File wrong decode parameters");
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	nsbmp_create(&bmp, &bitmap_callbacks);
@@ -157,7 +154,7 @@ static int read_bmp(mm_util_bmp_data * decoded, const char *filename, void *memo
 	code = bmp_analyse(&bmp, size, data);
 	if (code != BMP_OK) {
 		print_error("bmp_analyse", code);
-		res = MM_ERROR_IMAGE_INTERNAL;
+		res = MM_UTIL_ERROR_INVALID_OPERATION;
 		goto cleanup;
 	}
 
@@ -167,7 +164,7 @@ static int read_bmp(mm_util_bmp_data * decoded, const char *filename, void *memo
 		print_error("bmp_decode", code);
 		/* allow partially decoded images */
 		if (code != BMP_INSUFFICIENT_DATA) {
-			res = MM_ERROR_IMAGE_INTERNAL;
+			res = MM_UTIL_ERROR_INVALID_OPERATION;
 			goto cleanup;
 		}
 	}
@@ -189,7 +186,7 @@ int mm_util_decode_from_bmp_file(mm_util_bmp_data * decoded, const char *filenam
 {
 	int ret;
 
-	debug_log("mm_util_decode_from_gif_file");
+	mm_util_debug("mm_util_decode_from_gif_file");
 
 	ret = read_bmp(decoded, filename, NULL, 0);
 
@@ -200,7 +197,7 @@ int mm_util_decode_from_bmp_memory(mm_util_bmp_data * decoded, void **memory, un
 {
 	int ret;
 
-	debug_log("mm_util_decode_from_gif_file");
+	mm_util_debug("mm_util_decode_from_gif_file");
 
 	ret = read_bmp(decoded, NULL, *memory, src_size);
 
@@ -231,7 +228,7 @@ int mm_util_encode_bmp_to_file(mm_util_bmp_data * encoded, const char *filename)
 
 	if ((bmp = bmp_create(encoded->width, encoded->height, BYTES_PER_PIXEL * 8)) == NULL) {
 		printf("Invalid depth value.\n");
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	image = (uint8_t *) encoded->data;
@@ -247,7 +244,7 @@ int mm_util_encode_bmp_to_file(mm_util_bmp_data * encoded, const char *filename)
 
 	bmp_save(bmp, filename);
 	bmp_destroy(bmp);
-	return MM_ERROR_NONE;
+	return MM_UTIL_ERROR_NONE;
 }
 
 void mm_util_bmp_encode_set_width(mm_util_bmp_data * data, unsigned long width)

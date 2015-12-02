@@ -22,7 +22,7 @@ libmmutil_bmp_la_LIBADD = $(MMCOMMON_LIBS) -lnsbmp -lbmp -ldl -lexif -lttrace\
 				$(SYSTEMINFO_LIBS)\
 				$(MEDIA_LIBS)
 
-libmmutil_bmp_la_CFLAGS += $(MMLOG_CFLAGS) -DMMF_LOG_OWNER=0x0100 -DMMF_DEBUG_PREFIX=\"MMF-IMAGE\"
+libmmutil_bmp_la_CFLAGS += -DLIBPREFIX=\"$(libdir)\"
 
 libmmutil_bmp_la_DEPENDENCIES = $(srcdir)/../imgp/libmmutil_imgp.la
 

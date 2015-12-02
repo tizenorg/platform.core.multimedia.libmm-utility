@@ -22,7 +22,7 @@ libmmutil_gif_la_LIBADD = $(MMCOMMON_LIBS) -lgif -ldl -lexif -lttrace\
 				$(SYSTEMINFO_LIBS)\
 				$(MEDIA_LIBS)
 
-libmmutil_gif_la_CFLAGS += $(MMLOG_CFLAGS) -DMMF_LOG_OWNER=0x0100 -DMMF_DEBUG_PREFIX=\"MMF-IMAGE\"
+libmmutil_gif_la_CFLAGS += -DLIBPREFIX=\"$(libdir)\"
 
 libmmutil_gif_la_DEPENDENCIES = $(srcdir)/../imgp/libmmutil_imgp.la
 

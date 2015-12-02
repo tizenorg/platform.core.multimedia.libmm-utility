@@ -36,6 +36,7 @@
 #include <glib.h>
 
 #include "mm_util_png.h"
+#include "mm_util_debug.h"
 
 #define MM_UTIL_PNG_BYTES_TO_CHECK 4
 #define MM_UTIL_PROGRESSIVE_BYTES_DEFAULT 1024
@@ -53,9 +54,9 @@ bool mm_util_check_if_png(const char *fpath)
 	char buf[MM_UTIL_PNG_BYTES_TO_CHECK];
 	FILE *fp;
 
-	debug_log("mm_util_check_if_png");
+	mm_util_debug("mm_util_check_if_png");
 	if ((fp = fopen(fpath, "rb")) == NULL)
-		return MM_ERROR_IMAGE_FILEOPEN;
+		return MM_UTIL_ERROR_NO_SUCH_FILE;
 
 	if (fread(buf, 1, MM_UTIL_PNG_BYTES_TO_CHECK, fp) != MM_UTIL_PNG_BYTES_TO_CHECK) {
 		fclose(fp);
@@ -69,19 +70,19 @@ bool mm_util_check_if_png(const char *fpath)
 
 static void user_error_fn(png_structp png_ptr, png_const_charp error_msg)
 {
-	debug_error("%s", error_msg);
+	mm_util_error("%s", error_msg);
 }
 
 static void user_warning_fn(png_structp png_ptr, png_const_charp warning_msg)
 {
-	debug_error("%s", warning_msg);
+	mm_util_error("%s", warning_msg);
 }
 
 static void dec_set_prop(mm_util_png_data * decoded, png_structp png_ptr, png_infop info)
 {
 	png_color_16 my_background, *image_background;
 
-	debug_log("dec_set_prop");
+	mm_util_debug("dec_set_prop");
 
 	png_read_info(png_ptr, info);
 
@@ -145,38 +146,38 @@ int read_png(mm_util_png_data * decoded, FILE * fp, void *memory)
 	guint row_index;
 	read_data read_data_ptr;
 
-	debug_log("read_png");
+	mm_util_debug("read_png");
 	decoded->data = NULL;
 
 	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, (png_voidp) NULL, user_error_fn, user_warning_fn);
 
 	if (png_ptr == NULL) {
-		debug_error("could not create read struct");
+		mm_util_error("could not create read struct");
 		if (fp)
 			fclose(fp);
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	info_ptr = png_create_info_struct(png_ptr);
 	if (info_ptr == NULL) {
-		debug_error("could not create info struct");
+		mm_util_error("could not create info struct");
 		if (fp)
 			fclose(fp);
 		png_destroy_read_struct(&png_ptr, png_infopp_NULL, png_infopp_NULL);
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	if (setjmp(png_jmpbuf(png_ptr))) {
-		debug_error("setjmp called due to internal libpng error");
+		mm_util_error("setjmp called due to internal libpng error");
 		if (decoded->data) {
 			png_free(png_ptr, decoded->data);
 			decoded->data = NULL;
-			debug_log("free data");
+			mm_util_debug("free data");
 		}
 		png_destroy_read_struct(&png_ptr, &info_ptr, png_infopp_NULL);
 		if (fp)
 			fclose(fp);
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	if (fp)
@@ -187,7 +188,7 @@ int read_png(mm_util_png_data * decoded, FILE * fp, void *memory)
 		png_set_read_fn(png_ptr, &read_data_ptr, read_function);
 	} else {
 		png_destroy_read_struct(&png_ptr, &info_ptr, png_infopp_NULL);
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	dec_set_prop(decoded, png_ptr, info_ptr);
@@ -217,14 +218,14 @@ int read_png(mm_util_png_data * decoded, FILE * fp, void *memory)
 	if (fp)
 		fclose(fp);
 
-	return MM_ERROR_NONE;
+	return MM_UTIL_ERROR_NONE;
 }
 
 static void user_info_callback(png_structp png_ptr, png_infop info)
 {
 	mm_util_png_data *decoded = (mm_util_png_data *) png_get_io_ptr(png_ptr);
 
-	debug_log("user_info_callback");
+	mm_util_debug("user_info_callback");
 	dec_set_prop(decoded, png_ptr, info);
 
 	/* Allocate output buffer */
@@ -244,7 +245,7 @@ static void user_endrow_callback(png_structp png_ptr, png_bytep new_row, png_uin
 
 static void user_end_callback(png_structp png_ptr, png_infop info)
 {
-	debug_log("and we are done reading this image");
+	mm_util_debug("and we are done reading this image");
 }
 
 int read_png_progressive(mm_util_png_data * decoded, FILE * fp, void **memory, unsigned long long src_size)
@@ -253,38 +254,38 @@ int read_png_progressive(mm_util_png_data * decoded, FILE * fp, void **memory, u
 	png_infop info_ptr;
 	static unsigned long long old_length = 0;
 
-	debug_log("read_png_progressive");
+	mm_util_debug("read_png_progressive");
 	decoded->data = NULL;
 
 	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, (png_voidp) NULL, user_error_fn, user_warning_fn);
 
 	if (png_ptr == NULL) {
-		debug_error("could not create read struct");
+		mm_util_error("could not create read struct");
 		if (fp)
 			fclose(fp);
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	info_ptr = png_create_info_struct(png_ptr);
 	if (info_ptr == NULL) {
-		debug_error("could not create info struct");
+		mm_util_error("could not create info struct");
 		if (fp)
 			fclose(fp);
 		png_destroy_read_struct(&png_ptr, png_infopp_NULL, png_infopp_NULL);
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	if (setjmp(png_jmpbuf(png_ptr))) {
-		debug_error("setjmp called due to internal libpng error");
+		mm_util_error("setjmp called due to internal libpng error");
 		if (decoded->data) {
 			png_free(png_ptr, decoded->data);
 			decoded->data = NULL;
-			debug_log("free data");
+			mm_util_debug("free data");
 		}
 		png_destroy_read_struct(&png_ptr, &info_ptr, png_infopp_NULL);
 		if (fp)
 			fclose(fp);
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	png_set_progressive_read_fn(png_ptr, decoded, user_info_callback, user_endrow_callback, user_end_callback);
@@ -318,17 +319,17 @@ int read_png_progressive(mm_util_png_data * decoded, FILE * fp, void **memory, u
 	if (fp)
 		fclose(fp);
 
-	return MM_ERROR_NONE;
+	return MM_UTIL_ERROR_NONE;
 }
 
 int mm_util_decode_from_png_file(mm_util_png_data * decoded, const char *fpath)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	FILE *fp;
 
-	debug_log("mm_util_decode_from_png");
+	mm_util_debug("mm_util_decode_from_png");
 	if ((fp = fopen(fpath, "r")) == NULL)
-		return MM_ERROR_IMAGE_FILEOPEN;
+		return MM_UTIL_ERROR_NO_SUCH_FILE;
 
 	if (fp) {
 		if (decoded->png.progressive)
@@ -342,9 +343,9 @@ int mm_util_decode_from_png_file(mm_util_png_data * decoded, const char *fpath)
 
 int mm_util_decode_from_png_memory(mm_util_png_data * decoded, void **memory, unsigned long long src_size)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 
-	debug_log("mm_util_decode_from_memory");
+	mm_util_debug("mm_util_decode_from_memory");
 	if (decoded->png.progressive)
 		ret = read_png_progressive(decoded, NULL, memory, src_size);
 	else
@@ -355,7 +356,7 @@ int mm_util_decode_from_png_memory(mm_util_png_data * decoded, void **memory, un
 
 void mm_util_init_decode_png(mm_util_png_data * data)
 {
-	debug_log("mm_util_init_decode_png");
+	mm_util_debug("mm_util_init_decode_png");
 	data->png.progressive = 0;
 	data->png.progressive_bytes = MM_UTIL_PROGRESSIVE_BYTES_DEFAULT;
 	data->png.transform = MM_UTIL_PNG_TRANSFORM_IDENTITY;
@@ -419,41 +420,41 @@ int write_png(void **data, mm_util_png_data * encoded, FILE * fp)
 	guint row_index;
 	static png_bytepp row_pointers = NULL;
 
-	debug_log("write_png");
+	mm_util_debug("write_png");
 	encoded->data = NULL;
 	encoded->size = 0;
 
 	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, (png_voidp) NULL, user_error_fn, user_warning_fn);
 
 	if (png_ptr == NULL) {
-		debug_error("could not create write struct");
+		mm_util_error("could not create write struct");
 		if (fp)
 			fclose(fp);
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	info_ptr = png_create_info_struct(png_ptr);
 	if (info_ptr == NULL) {
-		debug_error("could not create info struct");
+		mm_util_error("could not create info struct");
 		png_destroy_write_struct(&png_ptr, png_infopp_NULL);
 		if (fp)
 			fclose(fp);
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	if (setjmp(png_jmpbuf(png_ptr))) {
-		debug_error("setjmp called due to internal libpng error");
+		mm_util_error("setjmp called due to internal libpng error");
 		if (encoded->data) {
 			png_free(png_ptr, encoded->data);
 			encoded->data = NULL;
-			debug_log("free data");
+			mm_util_debug("free data");
 		}
 		if (row_pointers)
 			png_free(png_ptr, row_pointers);
 		png_destroy_write_struct(&png_ptr, &info_ptr);
 		if (fp)
 			fclose(fp);
-		return MM_ERROR_IMAGE_INTERNAL;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	png_set_filter(png_ptr, 0, encoded->png.filter);
@@ -487,17 +488,17 @@ int write_png(void **data, mm_util_png_data * encoded, FILE * fp)
 	if (fp)
 		fclose(fp);
 
-	return MM_ERROR_NONE;
+	return MM_UTIL_ERROR_NONE;
 }
 
 int mm_util_encode_to_png_file(void **data, mm_util_png_data * encoded, const char *fpath)
 {
-	int ret = MM_ERROR_NONE;
+	int ret = MM_UTIL_ERROR_NONE;
 	FILE *fp;
 
-	debug_log("mm_util_encode_to_png");
+	mm_util_debug("mm_util_encode_to_png");
 	if ((fp = fopen(fpath, "w")) == NULL)
-		return MM_ERROR_IMAGE_FILEOPEN;
+		return MM_UTIL_ERROR_NO_SUCH_FILE;
 
 	ret = write_png(data, encoded, fp);
 
@@ -508,7 +509,7 @@ int mm_util_encode_to_png_memory(void **data, mm_util_png_data * encoded)
 {
 	int ret;
 
-	debug_log("mm_util_encode_to_memory");
+	mm_util_debug("mm_util_encode_to_memory");
 	ret = write_png(data, encoded, NULL);
 
 	return ret;
@@ -516,7 +517,7 @@ int mm_util_encode_to_png_memory(void **data, mm_util_png_data * encoded)
 
 void mm_util_init_encode_png(mm_util_png_data * data)
 {
-	debug_log("mm_util_init_encode_png");
+	mm_util_debug("mm_util_init_encode_png");
 	data->png.compression_level = MM_UTIL_COMPRESSION_6;
 	data->png.filter = MM_UTIL_PNG_FILTER_NONE;
 	data->png.color_type = MM_UTIL_PNG_COLOR_TYPE_RGB_ALPHA;

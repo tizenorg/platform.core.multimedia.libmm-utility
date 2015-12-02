@@ -25,6 +25,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include "mm_util_imgp.h"
 #include "libnsbmp.h"
 #include "bmpfile.h"
 
