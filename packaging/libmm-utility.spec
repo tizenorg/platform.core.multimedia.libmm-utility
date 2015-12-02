@@ -22,6 +22,8 @@ BuildRequires:  pkgconfig(capi-system-info)
 BuildRequires:  pkgconfig(ttrace)
 BuildRequires:  libpng-devel
 BuildRequires:  giflib-devel
+BuildRequires:  libbmp-devel
+BuildRequires:  libnsbmp-devel
 BuildRoot:  %{_tmppath}/%{name}-%{version}-build
 
 %description
@@ -63,6 +65,7 @@ sed -i -e "s#@JPEG_REQPKG@#$JPEG_REQPKG#g" jpeg/mmutil-jpeg.pc
 sed -i -e "s#@IMGCV_REQPKG@#$IMGCV_REQPKG#g" imgcv/mmutil-imgcv.pc
 sed -i -e "s#@PNG_REQPKG@#$PNG_REQPKG#g" png/mmutil-png.pc
 sed -i -e "s#@GIF_REQPKG@#$GIF_REQPKG#g" gif/mmutil-gif.pc
+sed -i -e "s#@BMP_REQPKG@#$BMP_REQPKG#g" bmp/mmutil-bmp.pc
 
 %install
 rm -rf %{buildroot}

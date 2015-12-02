@@ -89,6 +89,9 @@ AC_CONFIG_FILES([Makefile
 		 gif/Makefile
 		 gif/test/Makefile
 		 gif/mmutil-gif.pc
+		 bmp/Makefile
+		 bmp/test/Makefile
+		 bmp/mmutil-bmp.pc
 		 test/Makefile
 ])
 

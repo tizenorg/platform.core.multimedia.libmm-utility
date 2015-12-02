@@ -8,14 +8,16 @@ SUBDIRS = \
 	jpeg \
 	imgcv \
         png \
-        gif
+        gif \
+        bmp
 
 DIST_SUBDIRS = \
 	imgp \
 	jpeg \
 	imgcv \
         png \
-        gif
+        gif \
+        bmp
 
 EXTRA_DIST = \
 	configure.ac autogen.sh depcomp
