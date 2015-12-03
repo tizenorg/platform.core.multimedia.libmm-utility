@@ -196,12 +196,9 @@ int read_png(mm_util_png_data * decoded, FILE * fp, void *memory)
 	{
 		png_bytep row_pointers[decoded->height];
 
-		/* Clear the pointer array */
-		for (row_index = 0; row_index < decoded->height; row_index++)
-			row_pointers[row_index] = NULL;
-
-		for (row_index = 0; row_index < decoded->height; row_index++)
+		for (row_index = 0; row_index < decoded->height; row_index++) {
 			row_pointers[row_index] = png_malloc(png_ptr, png_get_rowbytes(png_ptr, info_ptr));
+		}
 
 		png_read_image(png_ptr, row_pointers);
 

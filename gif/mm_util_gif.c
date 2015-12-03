@@ -47,7 +47,7 @@ typedef struct {
 	unsigned long long size;
 } write_data;
 
-static void convert_gif_to_rgba(mm_util_gif_data * decoded, ColorMapObject * color_map, GifRowType * screen_buffer, unsigned long width, unsigned long height)
+static int convert_gif_to_rgba(mm_util_gif_data * decoded, ColorMapObject * color_map, GifRowType * screen_buffer, unsigned long width, unsigned long height)
 {
 	unsigned long i, j;
 	GifRowType gif_row;
@@ -58,11 +58,13 @@ static void convert_gif_to_rgba(mm_util_gif_data * decoded, ColorMapObject * col
 	if ((decoded->frames = (mm_util_gif_frame_data *) malloc(sizeof(mm_util_gif_frame_data)))
 		== NULL) {
 		mm_util_error("Failed to allocate memory required, aborted.");
-		return;
+		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
-	if ((decoded->frames[0].data = (void *)malloc(width * height * 4)) == NULL)
+	if ((decoded->frames[0].data = (void *)malloc(width * height * 4)) == NULL) {
 		mm_util_error("Failed to allocate memory required, aborted.");
+		return MM_UTIL_ERROR_INVALID_OPERATION;
+	}
 
 	buffer = (GifByteType *) decoded->frames[0].data;
 	for (i = 0; i < height; i++) {
@@ -75,6 +77,7 @@ static void convert_gif_to_rgba(mm_util_gif_data * decoded, ColorMapObject * col
 			*buffer++ = 255;
 		}
 	}
+	return MM_UTIL_ERROR_NONE;
 }
 
 static int read_function(GifFileType * gft, GifByteType * data, int size)
@@ -93,11 +96,12 @@ int read_gif(mm_util_gif_data * decoded, const char *filename, void *memory)
 	int ExtCode, i, j, Row, Col, Width, Height;
 	unsigned long Size;
 	GifRecordType record_type;
-	GifRowType *screen_buffer;
+	GifRowType *screen_buffer = NULL;
 	GifFileType *GifFile;
 	unsigned int image_num = 0;
 	ColorMapObject *ColorMap;
 	read_data read_data_ptr;
+	int ret;
 
 	mm_util_debug("mm_util_decode_from_gif");
 	if (filename) {
@@ -119,22 +123,31 @@ int read_gif(mm_util_gif_data * decoded, const char *filename, void *memory)
 
 	decoded->width = GifFile->SWidth;
 	decoded->height = GifFile->SHeight;
-	decoded->size = GifFile->SWidth * GifFile->SHeight * 4;
+	decoded->size = (unsigned long long)GifFile->SWidth * (unsigned long long)GifFile->SHeight * 4;
 
 	if ((screen_buffer = (GifRowType *)
-		 malloc(GifFile->SHeight * sizeof(GifRowType))) == NULL)
+		 malloc(GifFile->SHeight * sizeof(GifRowType))) == NULL) {
 		mm_util_error("Failed to allocate memory required, aborted.");
+		ret = MM_UTIL_ERROR_INVALID_OPERATION;
+		goto error;
+	}
 
 	Size = GifFile->SWidth * sizeof(GifPixelType);	/* Size in bytes one row. */
-	if ((screen_buffer[0] = (GifRowType) malloc(Size)) == NULL)	/* First row. */
+	if ((screen_buffer[0] = (GifRowType) malloc(Size)) == NULL) {	/* First row. */
 		mm_util_error("Failed to allocate memory required, aborted.");
+		ret = MM_UTIL_ERROR_INVALID_OPERATION;
+		goto error;
+	}
 
 	for (i = 0; i < GifFile->SWidth; i++)	/* Set its color to BackGround. */
 		screen_buffer[0][i] = GifFile->SBackGroundColor;
 	for (i = 1; i < GifFile->SHeight; i++) {
 		/* Allocate the other rows, and set their color to background too: */
-		if ((screen_buffer[i] = (GifRowType) malloc(Size)) == NULL)
+		if ((screen_buffer[i] = (GifRowType) malloc(Size)) == NULL) {
 			mm_util_error("Failed to allocate memory required, aborted.");
+			ret = MM_UTIL_ERROR_INVALID_OPERATION;
+			goto error;
+		}
 
 		memcpy(screen_buffer[i], screen_buffer[0], Size);
 	}
@@ -143,13 +156,15 @@ int read_gif(mm_util_gif_data * decoded, const char *filename, void *memory)
 	do {
 		if (DGifGetRecordType(GifFile, &record_type) == GIF_ERROR) {
 			mm_util_error("could not get record type");
-			return MM_UTIL_ERROR_INVALID_OPERATION;
+			ret = MM_UTIL_ERROR_INVALID_OPERATION;
+			goto error;
 		}
 		switch (record_type) {
 		case IMAGE_DESC_RECORD_TYPE:
 			if (DGifGetImageDesc(GifFile) == GIF_ERROR) {
 				mm_util_error("could not get image description");
-				return MM_UTIL_ERROR_INVALID_OPERATION;
+				ret = MM_UTIL_ERROR_INVALID_OPERATION;
+				goto error;
 			}
 			Row = GifFile->Image.Top;	/* Image Position relative to Screen. */
 			Col = GifFile->Image.Left;
@@ -158,7 +173,8 @@ int read_gif(mm_util_gif_data * decoded, const char *filename, void *memory)
 			mm_util_debug("Image %d at (%d, %d) [%dx%d]:     ", ++image_num, Col, Row, Width, Height);
 			if (GifFile->Image.Left + GifFile->Image.Width > GifFile->SWidth || GifFile->Image.Top + GifFile->Image.Height > GifFile->SHeight) {
 				mm_util_debug("Image %d is not confined to screen dimension, aborted.", image_num);
-				exit(EXIT_FAILURE);
+				ret = MM_UTIL_ERROR_INVALID_OPERATION;
+				goto error;
 			}
 
 			if (GifFile->Image.Interlace) {
@@ -169,14 +185,16 @@ int read_gif(mm_util_gif_data * decoded, const char *filename, void *memory)
 					for (j = Row + interlaced_offset[i]; j < Row + Height; j += interlaced_jumps[i]) {
 						if (DGifGetLine(GifFile, &screen_buffer[j][Col], Width) == GIF_ERROR) {
 							mm_util_error("could not get line");
-							return MM_UTIL_ERROR_INVALID_OPERATION;
+							ret = MM_UTIL_ERROR_INVALID_OPERATION;
+							goto error;
 						}
 					}
 			} else {
 				for (i = 0; i < Height; i++) {
 					if (DGifGetLine(GifFile, &screen_buffer[Row++][Col], Width) == GIF_ERROR) {
 						mm_util_error("could not get line");
-						return MM_UTIL_ERROR_INVALID_OPERATION;
+						ret = MM_UTIL_ERROR_INVALID_OPERATION;
+						goto error;
 					}
 				}
 			}
@@ -187,12 +205,14 @@ int read_gif(mm_util_gif_data * decoded, const char *filename, void *memory)
 				/* Skip any extension blocks in file: */
 				if (DGifGetExtension(GifFile, &ExtCode, &extension) == GIF_ERROR) {
 					mm_util_error("could not get extension");
-					return MM_UTIL_ERROR_INVALID_OPERATION;
+					ret = MM_UTIL_ERROR_INVALID_OPERATION;
+					goto error;
 				}
 				while (extension != NULL) {
 					if (DGifGetExtensionNext(GifFile, &extension) == GIF_ERROR) {
 						mm_util_error("could not get next extension");
-						return MM_UTIL_ERROR_INVALID_OPERATION;
+						ret = MM_UTIL_ERROR_INVALID_OPERATION;
+						goto error;
 					}
 				}
 			}
@@ -209,17 +229,28 @@ int read_gif(mm_util_gif_data * decoded, const char *filename, void *memory)
 	ColorMap = (GifFile->Image.ColorMap ? GifFile->Image.ColorMap : GifFile->SColorMap);
 	if (ColorMap == NULL) {
 		mm_util_error("Gif Image does not have a colormap\n");
-		return MM_UTIL_ERROR_INVALID_OPERATION;
+		ret = MM_UTIL_ERROR_INVALID_OPERATION;
+		goto error;
 	}
 
 	convert_gif_to_rgba(decoded, ColorMap, screen_buffer, GifFile->SWidth, GifFile->SHeight);
-	(void)free(screen_buffer);
 
+	ret = MM_UTIL_ERROR_NONE;
+error:
+	if(screen_buffer) {
+		if(screen_buffer[0])
+			(void)free(screen_buffer[0]);
+		for (i = 1; i < GifFile->SHeight; i++) {
+			if(screen_buffer[i])
+				(void)free(screen_buffer[i]);
+		}
+		(void)free(screen_buffer);
+	}
 	if (DGifCloseFile(GifFile) == GIF_ERROR) {
 		mm_util_error("could not close file");
-		return MM_UTIL_ERROR_INVALID_OPERATION;
+		ret = MM_UTIL_ERROR_INVALID_OPERATION;
 	}
-	return MM_UTIL_ERROR_NONE;
+	return ret;
 }
 
 int mm_util_decode_from_gif_file(mm_util_gif_data * decoded, const char *fpath)
@@ -309,8 +340,6 @@ static int save_buffer_to_gif(GifFileType * GifFile, GifByteType * OutputBuffer,
 		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
-	mm_util_debug(": Image 1 at (%d, %d) [%dx%d]:     ", GifFile->Image.Left, GifFile->Image.Top, GifFile->Image.Width, GifFile->Image.Height);
-
 	for (i = 0; i < height; i++) {
 		if (EGifPutLine(GifFile, Ptr, width) == GIF_ERROR) {
 			mm_util_error("could not put line");
@@ -393,7 +422,7 @@ int write_gif(mm_util_gif_data * encoded, const char *filename, void **data)
 		} else {
 			unsigned long x, y;
 			int z;
-			unsigned long long npix = encoded->width * encoded->height;
+			unsigned long long npix = (unsigned long long)encoded->width * (unsigned long long)encoded->height;
 			GifByteType *buffer = (GifByteType *) encoded->frames[i].data;
 
 			for (x = 0, y = 0; x < npix; x++) {

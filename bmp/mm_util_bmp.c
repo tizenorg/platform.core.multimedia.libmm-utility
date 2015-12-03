@@ -77,6 +77,7 @@ unsigned char *load_file(const char *path, size_t * data_size)
 	if (n != size) {
 		mm_util_error("file read failed");
 		free(buffer);
+		fclose(fd);
 		return NULL;
 	}
 
