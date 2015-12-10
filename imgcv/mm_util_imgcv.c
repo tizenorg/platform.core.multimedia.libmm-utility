@@ -112,10 +112,10 @@ static void _convert_hsv_to_rgb(int hVal, int sVal, int vVal, float *rVal, float
 {
 	mm_util_debug("Enter _convert_hsv_to_rgb");
 
-	CvMat *mat1 = cvCreateMat(1,1,CV_8UC3);
+	CvMat *mat1 = cvCreateMat(1, 1 , CV_8UC3);
 	cvSet2D(mat1, 0, 0, cvScalar((double)hVal, (double)sVal, (double)vVal, 0.0));
 
-	CvMat *mat2 = cvCreateMat(1,1,CV_8UC3);
+	CvMat *mat2 = cvCreateMat(1, 1, CV_8UC3);
 
 	cvCvtColor(mat1, mat2, CV_HSV2BGR);
 
@@ -143,8 +143,8 @@ static int _mm_util_imgcv_calculate_hist(mm_util_imgcv_s *handle, unsigned char 
 	int vVal = 0;
 
 	float rVal = 0.f;
-    float gVal = 0.f;
-    float bVal = 0.f;
+	float gVal = 0.f;
+	float bVal = 0.f;
 
 	unsigned int maxBinVal = 0;
 	int max_bin_idx[3] = {-1, -1, -1};
@@ -159,7 +159,7 @@ static int _mm_util_imgcv_calculate_hist(mm_util_imgcv_s *handle, unsigned char 
 		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
-	IplImage *planes [] = {hImg, sImg, vImg};
+	IplImage *planes[] = {hImg, sImg, vImg};
 
 	cvCvtColor(handle->inImg, hsvImg, CV_RGB2HSV);
 	cvSplit(hsvImg, hImg, sImg, vImg, NULL);
@@ -175,10 +175,10 @@ static int _mm_util_imgcv_calculate_hist(mm_util_imgcv_s *handle, unsigned char 
 
 	cvCalcHist(planes, hist, 0, NULL);
 
-	for (nh=0; nh<(handle->hBins); nh++) {
-		for (ns=0; ns<(handle->sBins); ns++) {
-			for (nv=0; nv<(handle->vBins); nv++) {
-				unsigned int binVal = (unsigned int)cvGetReal3D( (hist)->bins, nh, ns, nv);
+	for (nh = 0; nh < (handle->hBins); nh++) {
+		for (ns = 0; ns < (handle->sBins); ns++) {
+			for (nv = 0; nv < (handle->vBins); nv++) {
+				unsigned int binVal = (unsigned int)cvGetReal3D((hist)->bins, nh, ns, nv);
 				if (binVal > maxBinVal) {
 					maxBinVal = binVal;
 					max_bin_idx[0] = nh;

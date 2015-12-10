@@ -45,38 +45,38 @@ transform_completed_cb(media_packet_h *packet, int error, void *user_param)
 	int dst_width, dst_height, dst_avg_bps, dst_max_bps;
 	char *output_fmt = NULL;
 
-	if(error == MM_UTIL_ERROR_NONE) {
+	if (error == MM_UTIL_ERROR_NONE) {
 		mm_util_debug("completed");
 		output_fmt = (char*)malloc(sizeof(char) * IMAGE_FORMAT_LABEL_BUFFER_SIZE);
-		if(output_fmt) {
-			if(media_packet_get_format(*packet, &dst_fmt) != MM_UTIL_ERROR_NONE) {
+		if (output_fmt) {
+			if (media_packet_get_format(*packet, &dst_fmt) != MM_UTIL_ERROR_NONE) {
 				mm_util_error("Imedia_packet_get_format");
 				IMGP_FREE(output_fmt);
 				return FALSE;
 			}
 
-			if(media_format_get_video_info(dst_fmt, &dst_mimetype, &dst_width, &dst_height, &dst_avg_bps, &dst_max_bps) ==MEDIA_FORMAT_ERROR_NONE) {
+			if (media_format_get_video_info(dst_fmt, &dst_mimetype, &dst_width, &dst_height, &dst_avg_bps, &dst_max_bps) == MEDIA_FORMAT_ERROR_NONE) {
 				memset(output_fmt, 0, IMAGE_FORMAT_LABEL_BUFFER_SIZE);
-				if(dst_mimetype  ==MEDIA_FORMAT_YV12 || dst_mimetype == MEDIA_FORMAT_422P ||dst_mimetype == MEDIA_FORMAT_I420
-					|| dst_mimetype == MEDIA_FORMAT_NV12 || dst_mimetype == MEDIA_FORMAT_UYVY ||dst_mimetype == MEDIA_FORMAT_YUYV) {
+				if (dst_mimetype == MEDIA_FORMAT_YV12 || dst_mimetype == MEDIA_FORMAT_422P || dst_mimetype == MEDIA_FORMAT_I420
+					|| dst_mimetype == MEDIA_FORMAT_NV12 || dst_mimetype == MEDIA_FORMAT_UYVY || dst_mimetype == MEDIA_FORMAT_YUYV) {
 					strncpy(output_fmt, "yuv", strlen("yuv"));
 				} else {
-					strncpy(output_fmt,"rgb", strlen("rgb"));
+					strncpy(output_fmt, "rgb", strlen("rgb"));
 				}
 				mm_util_debug("[mimetype: %d] W x H : %d x %d", dst_mimetype, dst_width, dst_height);
-				snprintf(output_file, 25, "result_%dx%d.%s", dst_width,dst_height, output_fmt);
+				snprintf(output_file, 25, "result_%dx%d.%s", dst_width, dst_height, output_fmt);
 			}
 		}
 
 		FILE *fpout = fopen(output_file, "w");
-		if(fpout) {
+		if (fpout) {
 			media_packet_get_buffer_size(*packet, &size);
 			void *dst = NULL;
-			if(media_packet_get_buffer_data_ptr(*packet, &dst) != MM_UTIL_ERROR_NONE) {
+			if (media_packet_get_buffer_data_ptr(*packet, &dst) != MM_UTIL_ERROR_NONE) {
 				IMGP_FREE(dst);
 				IMGP_FREE(output_fmt);
 				fclose(fpout);
-				mm_util_error ("[dst] media_packet_get_extra");
+				mm_util_error("[dst] media_packet_get_extra");
 				return FALSE;
 			}
 			mm_util_debug("dst: %p [%d]", dst, size);
@@ -113,8 +113,8 @@ int main(int argc, char *argv[])
 	}
 
 	/* Create Transform */
-	ret = mm_util_create (&MMHandle);
-	if(ret == MM_UTIL_ERROR_NONE) {
+	ret = mm_util_create(&MMHandle);
+	if (ret == MM_UTIL_ERROR_NONE) {
 		mm_util_debug("Success - Create Transcode Handle [MMHandle: 0x%2x]", MMHandle);
 	} else {
 		mm_util_debug("ERROR - Create Transcode Handle");
@@ -124,47 +124,46 @@ int main(int argc, char *argv[])
 	handle = (mm_util_s*) MMHandle;
 
 	media_format_h fmt;
-	if(media_format_create(&fmt) == MEDIA_FORMAT_ERROR_NONE) {
-		if(media_format_set_video_mime(fmt, MEDIA_FORMAT_I420) != MEDIA_FORMAT_ERROR_NONE) {
+	if (media_format_create(&fmt) == MEDIA_FORMAT_ERROR_NONE) {
+		if (media_format_set_video_mime(fmt, MEDIA_FORMAT_I420) != MEDIA_FORMAT_ERROR_NONE) {
 			media_format_unref(fmt);
 			mm_util_error("[Error] Set - video mime");
 			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 
-		if(media_format_set_video_width(fmt, 320) != MEDIA_FORMAT_ERROR_NONE) {
+		if (media_format_set_video_width(fmt, 320) != MEDIA_FORMAT_ERROR_NONE) {
 			media_format_unref(fmt);
 			mm_util_error("[Error] Set - video width");
 			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 
-		if(media_format_set_video_height(fmt, 240) != MEDIA_FORMAT_ERROR_NONE) {
+		if (media_format_set_video_height(fmt, 240) != MEDIA_FORMAT_ERROR_NONE) {
 			media_format_unref(fmt);
 			mm_util_error("[Error] Set - video height");
 			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 
-		if(media_format_set_video_avg_bps(fmt, 15000000) != MEDIA_FORMAT_ERROR_NONE) {
+		if (media_format_set_video_avg_bps(fmt, 15000000) != MEDIA_FORMAT_ERROR_NONE) {
 			media_format_unref(fmt);
 			mm_util_error("[Error] Set - video avg bps");
 			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 
-		if(media_format_set_video_max_bps(fmt, 20000000) != MEDIA_FORMAT_ERROR_NONE) {
+		if (media_format_set_video_max_bps(fmt, 20000000) != MEDIA_FORMAT_ERROR_NONE) {
 			media_format_unref(fmt);
 			mm_util_error("[Error] Set - video max bps");
 			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 
 		mm_util_debug("media_format_set_video_info success! w:320, h:240, MEDIA_FORMAT_I420\n");
-	}
-	else {
+	} else {
 		mm_util_error("media_format_create failed...");
 	}
 
 	ret = media_packet_create_alloc(fmt, (media_packet_finalize_cb)packet_finalize_callback, NULL, &src_packet);
-	if(ret == MM_UTIL_ERROR_NONE) {
+	if (ret == MM_UTIL_ERROR_NONE) {
 		mm_util_debug("Success - Create Media Packet(%p)", src_packet);
-		uint64_t size =0;
+		uint64_t size = 0;
 		if (media_packet_get_buffer_size(src_packet, &size) == MEDIA_PACKET_ERROR_NONE) {
 			ptr = malloc(size);
 			if (ptr == NULL) {
@@ -182,7 +181,7 @@ int main(int argc, char *argv[])
 					mm_util_debug("\tmemory allocation failed\n");
 					return MM_UTIL_ERROR_INVALID_OPERATION;
 				}
-				if(fread(src, 1, (int)size, fp)) {
+				if (fread(src, 1, (int)size, fp)) {
 					mm_util_debug("#Success# fread");
 					memcpy(ptr, src, (int)size);
 					mm_util_debug("memcpy");
@@ -198,7 +197,7 @@ int main(int argc, char *argv[])
 
 	/* Set Source */
 	ret = mm_util_set_hardware_acceleration(MMHandle, atoi(argv[2]));
-	if(ret == MM_UTIL_ERROR_NONE) {
+	if (ret == MM_UTIL_ERROR_NONE) {
 		mm_util_debug("Success - Set hardware_acceleration");
 	} else {
 		mm_util_debug("ERROR - Set hardware_acceleration");
@@ -206,7 +205,7 @@ int main(int argc, char *argv[])
 	}
 
 	ret = mm_util_set_resolution(MMHandle, 176, 144);
-	if(ret == MM_UTIL_ERROR_NONE) {
+	if (ret == MM_UTIL_ERROR_NONE) {
 		mm_util_debug("Success - Set Convert Info");
 	} else {
 		media_format_unref(fmt);
@@ -216,7 +215,7 @@ int main(int argc, char *argv[])
 
 	/* Transform */
 	ret = mm_util_transform(MMHandle, src_packet, (mm_util_completed_callback) transform_completed_cb, handle);
-	if(ret == MM_UTIL_ERROR_NONE) {
+	if (ret == MM_UTIL_ERROR_NONE) {
 		mm_util_debug("Success - Transform");
 	} else {
 		media_format_unref(fmt);
@@ -228,7 +227,7 @@ int main(int argc, char *argv[])
 	while (false == completed) {} // polling
 
 	ret = mm_util_destroy(MMHandle);
-	if(ret == MM_UTIL_ERROR_NONE) {
+	if (ret == MM_UTIL_ERROR_NONE) {
 		mm_util_debug("Success - Destroy");
 	} else {
 		media_format_unref(fmt);

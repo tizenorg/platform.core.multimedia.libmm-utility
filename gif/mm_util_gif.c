@@ -237,11 +237,11 @@ int read_gif(mm_util_gif_data * decoded, const char *filename, void *memory)
 
 	ret = MM_UTIL_ERROR_NONE;
 error:
-	if(screen_buffer) {
-		if(screen_buffer[0])
+	if (screen_buffer) {
+		if (screen_buffer[0])
 			(void)free(screen_buffer[0]);
 		for (i = 1; i < GifFile->SHeight; i++) {
-			if(screen_buffer[i])
+			if (screen_buffer[i])
 				(void)free(screen_buffer[i]);
 		}
 		(void)free(screen_buffer);

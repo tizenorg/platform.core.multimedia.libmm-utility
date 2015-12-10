@@ -39,7 +39,7 @@
 static inline void flush_stdin()
 {
 	int ch;
-	while((ch=getchar()) != EOF && ch != '\n');
+	while ((ch = getchar()) != EOF && ch != '\n');
 }
 
 
@@ -63,7 +63,7 @@ static int _read_file(char *file_name, void **data, int *data_size)
 
 	fseek(fp, 0, SEEK_END);
 	file_size = ftell(fp);
-	if(file_size > -1L) {
+	if (file_size > -1L) {
 		rewind(fp);
 		*data = (void *)malloc(file_size);
 		if (*data == NULL) {
@@ -72,7 +72,7 @@ static int _read_file(char *file_name, void **data, int *data_size)
 			fp = NULL;
 			return FALSE;
 		} else {
-			if(fread(*data, 1, file_size, fp)) {
+			if (fread(*data, 1, file_size, fp)) {
 				fprintf(stderr, "#Success# fread\n");
 			} else {
 				fprintf(stderr, "#Error# fread\n");
@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
 
 	if (ret != MM_UTIL_ERROR_NONE) {
 		fprintf(stderr, "\tERROR is occurred %x\n", ret);
-	}else {
+	} else {
 		fprintf(stderr, "\tJPEG OPERATION SUCCESS\n");
 		if (!strcmp("encode", argv[1])) {
 			if (dst) {
@@ -218,14 +218,13 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "\tENCODED data is NULL\n");
 			}
 		} else {
-			if(decoded_data.data) {
-				fprintf(stderr, "\t##Decoded data##: %p\t width: %d\t height:%d\t size: %d\n",
-				                decoded_data.data, decoded_data.width, decoded_data.height, decoded_data.size);
+			if (decoded_data.data) {
+				fprintf(stderr, "\t##Decoded data##: %p\t width: %d\t height:%d\t size: %d\n", decoded_data.data, decoded_data.width, decoded_data.height, decoded_data.size);
 				char filename[BUFFER_SIZE] = {0, };
 				memset(filename, 0, BUFFER_SIZE);
-				if(fmt == MM_UTIL_JPEG_FMT_RGB888 || fmt == MM_UTIL_JPEG_FMT_RGBA8888 || fmt == MM_UTIL_JPEG_FMT_BGRA8888 || fmt == MM_UTIL_JPEG_FMT_ARGB8888) {
+				if (fmt == MM_UTIL_JPEG_FMT_RGB888 || fmt == MM_UTIL_JPEG_FMT_RGBA8888 || fmt == MM_UTIL_JPEG_FMT_BGRA8888 || fmt == MM_UTIL_JPEG_FMT_ARGB8888) {
 					snprintf(filename, BUFFER_SIZE, "%s%s", DECODE_RESULT_PATH, "rgb");
-				} else if((fmt == MM_UTIL_JPEG_FMT_YUV420) ||
+				} else if ((fmt == MM_UTIL_JPEG_FMT_YUV420) ||
 					(fmt == MM_UTIL_JPEG_FMT_YUV422) ||
 					(fmt == MM_UTIL_JPEG_FMT_NV12) ||
 					(fmt == MM_UTIL_JPEG_FMT_NV21) ||

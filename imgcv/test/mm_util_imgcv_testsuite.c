@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 	unsigned char *img_buffer;
 	unsigned int  img_buffer_size;
 
-	char filename [MAX_FILENAME_LEN];
+	char filename[MAX_FILENAME_LEN];
 
 	if (argc < 1) {
 		fprintf(stderr, "Usage: ./mm_imgcv_testsuite filename(jpg format only)\n");
