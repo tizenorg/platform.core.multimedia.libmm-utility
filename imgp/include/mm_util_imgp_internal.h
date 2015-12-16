@@ -30,7 +30,6 @@
 #endif
 
 #include <gmodule.h>
-#include <mm_types.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <time.h>

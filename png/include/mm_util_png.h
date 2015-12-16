@@ -26,8 +26,6 @@
 extern "C" {
 #endif
 #include "mm_util_imgp.h"
-#include <mm_attrs.h>
-#include <mm_attrs_private.h>
 #include "png.h"
 
 /**
