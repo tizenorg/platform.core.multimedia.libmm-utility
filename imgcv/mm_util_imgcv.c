@@ -24,7 +24,7 @@
 #include "mm_util_imgp.h"
 #include "mm_util_imgcv.h"
 #include "mm_util_imgcv_internal.h"
-#include <gmodule.h>
+
 #ifdef ENABLE_TTRACE
 #include <ttrace.h>
 #define TTRACE_BEGIN(NAME) traceBegin(TTRACE_TAG_IMAGE, NAME)
