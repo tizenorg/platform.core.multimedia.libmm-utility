@@ -24,7 +24,7 @@
 
 #define ONE_ALL 0
 #define IMAGE_FORMAT_LABEL_BUFFER_SIZE 4
-MMHandleType MMHandle = 0;
+mm_util_imgp_h imgp_handle = 0;
 bool completed = false;
 
 int packet_finalize_callback(media_packet_h packet, int err, void* userdata)
@@ -38,7 +38,7 @@ transform_completed_cb(media_packet_h *packet, int error, void *user_param)
 {
 	uint64_t size = 0;
 	char output_file[25] = {};
-	mm_util_debug("MMHandle: 0x%2x", MMHandle);
+	mm_util_debug("imgp_handle: 0x%2x", imgp_handle);
 
 	media_format_h dst_fmt;
 	media_format_mimetype_e dst_mimetype;
@@ -113,15 +113,15 @@ int main(int argc, char *argv[])
 	}
 
 	/* Create Transform */
-	ret = mm_util_create(&MMHandle);
+	ret = mm_util_create(&imgp_handle);
 	if (ret == MM_UTIL_ERROR_NONE) {
-		mm_util_debug("Success - Create Transcode Handle [MMHandle: 0x%2x]", MMHandle);
+		mm_util_debug("Success - Create Transcode Handle [imgp_handle: 0x%2x]", imgp_handle);
 	} else {
 		mm_util_debug("ERROR - Create Transcode Handle");
 		return ret;
 	}
 
-	handle = (mm_util_s*) MMHandle;
+	handle = (mm_util_s*) imgp_handle;
 
 	media_format_h fmt;
 	if (media_format_create(&fmt) == MEDIA_FORMAT_ERROR_NONE) {
@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Set Source */
-	ret = mm_util_set_hardware_acceleration(MMHandle, atoi(argv[2]));
+	ret = mm_util_set_hardware_acceleration(imgp_handle, atoi(argv[2]));
 	if (ret == MM_UTIL_ERROR_NONE) {
 		mm_util_debug("Success - Set hardware_acceleration");
 	} else {
@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
 		return ret;
 	}
 
-	ret = mm_util_set_resolution(MMHandle, 176, 144);
+	ret = mm_util_set_resolution(imgp_handle, 176, 144);
 	if (ret == MM_UTIL_ERROR_NONE) {
 		mm_util_debug("Success - Set Convert Info");
 	} else {
@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Transform */
-	ret = mm_util_transform(MMHandle, src_packet, (mm_util_completed_callback) transform_completed_cb, handle);
+	ret = mm_util_transform(imgp_handle, src_packet, (mm_util_completed_callback) transform_completed_cb, handle);
 	if (ret == MM_UTIL_ERROR_NONE) {
 		mm_util_debug("Success - Transform");
 	} else {
@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
 	mm_util_debug("Wait...");
 	while (false == completed) {} // polling
 
-	ret = mm_util_destroy(MMHandle);
+	ret = mm_util_destroy(imgp_handle);
 	if (ret == MM_UTIL_ERROR_NONE) {
 		mm_util_debug("Success - Destroy");
 	} else {

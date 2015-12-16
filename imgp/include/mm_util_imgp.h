@@ -26,8 +26,9 @@
 extern "C" {
 #endif
 
-#include <mm_types.h>
 #include <media_packet.h>
+
+typedef void *mm_util_imgp_h;
 
 typedef bool (*mm_util_completed_callback)(media_packet_h *dst, int error, void *user_param);
 /**
@@ -109,57 +110,50 @@ typedef enum
  * @see         mm_util_img_format
  * @since       R1, 1.0
  */
-int
-mm_util_get_image_size(mm_util_img_format format, unsigned int width, unsigned int height, unsigned int *size);
-
+int mm_util_get_image_size(mm_util_img_format format, unsigned int width, unsigned int height, unsigned int *size);
 
 /**
  *
  * @remark 	Transform Handle Creation
  *
- * @param	MMHandle		[in]			MMHandleType pointer
-
+ * @param	imgp_handle		[in]			image_util_imgp_h
  * @return 	This function returns transform processor result value
  *		if the result is 0, then handle creation succeed
  *		else if the result is -1, then handle creation failed
  */
-int
-mm_util_create(MMHandleType* MMHandle);
+int mm_util_create(mm_util_imgp_h *imgp_handle);
 
 /**
  *
  * @remark 	Transform Handle Creation
  *
- * @param	MMHandle		[in]			MMHandleType pointer
+ * @param	imgp_handle		[in]			image_util_imgp_h
  * @param	mode			[in]			User can use the accelerated image processing
 
  * @return 	This function returns transform processor result value
  *		if the result is 0, then handle creation succeed
  *		else if the result is -1, then handle creation failed
  */
-int
-mm_util_set_hardware_acceleration(MMHandleType MMHandle, bool mode);
-
+int mm_util_set_hardware_acceleration(mm_util_imgp_h imgp_handle, bool mode);
 
 /**
  *
  * @remark 	Transform Handle Creation
  *
- * @param	MMHandle		[in]		MMHandleType pointer
+ * @param	imgp_handle		[in]			image_util_imgp_h
  * @param	colorspace	[in]			colorspace The colorspace of the destination image buffer
 
  * @return 	This function returns transform processor result value
  *		if the result is 0, then handle creation succeed
  *		else if the result is -1, then handle creation failed
  */
-int
-mm_util_set_colorspace_convert(MMHandleType MMHandle, mm_util_img_format colorspace);
+int mm_util_set_colorspace_convert(mm_util_imgp_h imgp_handle, mm_util_img_format colorspace);
 
 /**
  *
  * @remark 	Transform Handle Creation
  *
- * @param	MMHandle		[in]		MMHandleType pointer
+ * @param	imgp_handle		[in]			image_util_imgp_h
  * @param	width		[in]			width The width of destination image buffer
  * @param	height		[in]			height The height of destination image buffer
 
@@ -167,28 +161,26 @@ mm_util_set_colorspace_convert(MMHandleType MMHandle, mm_util_img_format colorsp
  *		if the result is 0, then handle creation succeed
  *		else if the result is -1, then handle creation failed
  */
-int
-mm_util_set_resolution(MMHandleType MMHandle, unsigned int width, unsigned int height);
+int mm_util_set_resolution(mm_util_imgp_h imgp_handle, unsigned int width, unsigned int height);
 
 /**
  *
  * @remark 	Transform Handle Creation
  *
- * @param	MMHandle		[in]			MMHandleType pointer
+ * @param	imgp_handle		[in]			image_util_imgp_h
  * @param	rotation		[in]			dest_rotation The rotation value of destination image buffer
 
  * @return 	This function returns transform processor result value
  *		if the result is 0, then handle creation succeed
  *		else if the result is -1, then handle creation failed
  */
-int
-mm_util_set_rotation(MMHandleType MMHandle, mm_util_img_rotate_type rotation);
+int mm_util_set_rotation(mm_util_imgp_h imgp_handle, mm_util_img_rotate_type rotation);
 
 /**
  *
  * @remark 	Transform Handle Creation
  *
- * @param	MMHandle		[in]			MMHandleType pointer
+ * @param	imgp_handle		[in]			image_util_imgp_h
  * @param	start_x			[in]			The start x position of cropped image buffer
  * @param	start_y			[in]			The start y position of cropped image buffer
  * @param	end_x			[in]			The start x position of cropped image buffer
@@ -198,14 +190,13 @@ mm_util_set_rotation(MMHandleType MMHandle, mm_util_img_rotate_type rotation);
  *		if the result is 0, then handle creation succeed
  *		else if the result is -1, then handle creation failed
  */
-int
-mm_util_set_crop_area(MMHandleType MMHandle, unsigned int start_x, unsigned int start_y, unsigned int end_x, unsigned int end_y);
+int mm_util_set_crop_area(mm_util_imgp_h imgp_handle, unsigned int start_x, unsigned int start_y, unsigned int end_x, unsigned int end_y);
 
 /**
  *
  * @remark 	Transform Handle Creation
  *
- * @param	MMHandle		[in]			MMHandleType pointer
+ * @param	imgp_handle		[in]			image_util_imgp_h
  * @param	is_completed		[in/out]		Users can obtain the value of the conversion about whether to complete
 
  * @return 	This function returns transform processor result value
@@ -213,14 +204,13 @@ mm_util_set_crop_area(MMHandleType MMHandle, unsigned int start_x, unsigned int 
  *		else if the result is -1, then handle creation failed
  */
 
-int
-mm_util_transform_is_completed(MMHandleType MMHandle, bool *is_completed);
+int mm_util_transform_is_completed(mm_util_imgp_h imgp_handle, bool *is_completed);
 
 /**
  *
  * @remark 	Image Transform Pipeline
  *
- * @param	MMHandle						[in]			MMHandleType
+ * @param	imgp_handle		[in]			image_util_imgp_h
  * @param	completed_callback					[in]			Completed_callback
  * @param	user_param						[in]			User parameter which is received from user when callback function was set
 
@@ -228,23 +218,18 @@ mm_util_transform_is_completed(MMHandleType MMHandle, bool *is_completed);
  *		if the result is 0, then you can use output_Filename pointer(char** value)
  *		else if the result is -1, then do not execute when the colopsapce converter is not supported
  */
-int
-mm_util_transform(MMHandleType MMHandle, media_packet_h src, mm_util_completed_callback completed_callback, void * user_data);
-
+int mm_util_transform(mm_util_imgp_h imgp_handle, media_packet_h src, mm_util_completed_callback completed_callback, void * user_data);
 
 /**
  *
  * @remark 	Transform Handle Destory
  *
- * @param	MMHandle		[in]			MMHandleType
-
+ * @param	imgp_handle		[in]			image_util_imgp_h
  * @return 	This function returns transform processor result value
  *		if the result is 0, then handle destory succeed
  *		else if the result is -1, then handle destory failed
  */
-int
-mm_util_destroy(MMHandleType MMHandle);
-
+int mm_util_destroy(mm_util_imgp_h imgp_handle);
 
 /**
  * This function convert the pixel format from source format to destination format.
@@ -261,10 +246,8 @@ mm_util_destroy(MMHandleType MMHandle);
  * @see         mm_util_img_format
  * @since       R1, 1.0
  */
-int
-mm_util_convert_colorspace(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
+int mm_util_convert_colorspace(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
                            unsigned char *dst, mm_util_img_format dst_format);
-
 
 /**
  * This function resizes the source image.
@@ -282,10 +265,8 @@ mm_util_convert_colorspace(const unsigned char *src, unsigned int src_width, uns
  * @see         mm_util_img_format
  * @since       R1, 1.0
  */
-int
-mm_util_resize_image(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
+int mm_util_resize_image(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
                      unsigned char *dst, unsigned int *dst_width, unsigned int *dst_height);
-
 
 /**
  * This function rotates the source image.
@@ -304,8 +285,7 @@ mm_util_resize_image(const unsigned char *src, unsigned int src_width, unsigned 
  * @see         mm_util_img_format, mm_util_img_rotate_type
  * @since       R1, 1.0
  */
-int
-mm_util_rotate_image(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
+int mm_util_rotate_image(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
                      unsigned char *dst, unsigned int *dst_width, unsigned int *dst_height, mm_util_img_rotate_type angle);
 
 /**
@@ -327,8 +307,7 @@ mm_util_rotate_image(const unsigned char *src, unsigned int src_width, unsigned 
  * @see         mm_util_img_format, mm_util_img_rotate_type
  * @since       R1, 1.0
  */
-int
-mm_util_crop_image(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
+int mm_util_crop_image(const unsigned char *src, unsigned int src_width, unsigned int src_height, mm_util_img_format src_format,
                      unsigned int crop_start_x, unsigned int crop_start_y, unsigned int *crop_dest_width, unsigned int *crop_dest_height, unsigned char *dst);
 
 #ifdef __cplusplus

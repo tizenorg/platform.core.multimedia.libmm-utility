@@ -1343,13 +1343,13 @@ _mm_util_handle_finalize(mm_util_s *handle)
 	return ret;
 }
 
-int mm_util_create(MMHandleType* MMHandle)
+int mm_util_create(mm_util_imgp_h *imgp_handle)
 {
 	int ret = MM_UTIL_ERROR_NONE;
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:CREATE");
 
-	if (MMHandle == NULL) {
+	if (imgp_handle == NULL) {
 		mm_util_error("Invalid arguments [tag null]");
 		TTRACE_END();
 		return MM_UTIL_ERROR_INVALID_PARAMETER;
@@ -1378,16 +1378,16 @@ int mm_util_create(MMHandleType* MMHandle)
 		mm_util_debug("Success -__mm_util_create_thread");
 	}
 
-	*MMHandle = (MMHandleType)handle;
+	*imgp_handle = (mm_util_imgp_h)handle;
 
 	TTRACE_END();
 	return ret;
 }
 
-int mm_util_set_hardware_acceleration(MMHandleType MMHandle, bool mode)
+int mm_util_set_hardware_acceleration(mm_util_imgp_h imgp_handle, bool mode)
 {
 	int ret = MM_UTIL_ERROR_NONE;
-	mm_util_s *handle = (mm_util_s *) MMHandle;
+	mm_util_s *handle = (mm_util_s *) imgp_handle;
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:SET_HARDWARE_ACCELERATION");
 
@@ -1403,10 +1403,10 @@ int mm_util_set_hardware_acceleration(MMHandleType MMHandle, bool mode)
 	return ret;
 }
 
-int mm_util_set_colorspace_convert(MMHandleType MMHandle, mm_util_img_format colorspace)
+int mm_util_set_colorspace_convert(mm_util_imgp_h imgp_handle, mm_util_img_format colorspace)
 {
 	int ret = MM_UTIL_ERROR_NONE;
-	mm_util_s *handle = (mm_util_s *) MMHandle;
+	mm_util_s *handle = (mm_util_s *) imgp_handle;
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:SET_HARDWARE_ACCELERATION");
 
@@ -1424,10 +1424,10 @@ int mm_util_set_colorspace_convert(MMHandleType MMHandle, mm_util_img_format col
 	return ret;
 }
 
-int mm_util_set_resolution(MMHandleType MMHandle, unsigned int width, unsigned int height)
+int mm_util_set_resolution(mm_util_imgp_h imgp_handle, unsigned int width, unsigned int height)
 {
 	int ret = MM_UTIL_ERROR_NONE;
-	mm_util_s *handle = (mm_util_s *) MMHandle;
+	mm_util_s *handle = (mm_util_s *) imgp_handle;
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:SET_RESOLUTION");
 
@@ -1444,10 +1444,10 @@ int mm_util_set_resolution(MMHandleType MMHandle, unsigned int width, unsigned i
 	return ret;
 }
 
-int mm_util_set_rotation(MMHandleType MMHandle, mm_util_img_rotate_type rotation)
+int mm_util_set_rotation(mm_util_imgp_h imgp_handle, mm_util_img_rotate_type rotation)
 {
 	int ret = MM_UTIL_ERROR_NONE;
-	mm_util_s *handle = (mm_util_s *) MMHandle;
+	mm_util_s *handle = (mm_util_s *) imgp_handle;
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:SET_ROTATION");
 
@@ -1464,10 +1464,10 @@ int mm_util_set_rotation(MMHandleType MMHandle, mm_util_img_rotate_type rotation
 	return ret;
 }
 
-int mm_util_set_crop_area(MMHandleType MMHandle, unsigned int start_x, unsigned int start_y, unsigned int end_x, unsigned int end_y)
+int mm_util_set_crop_area(mm_util_imgp_h imgp_handle, unsigned int start_x, unsigned int start_y, unsigned int end_x, unsigned int end_y)
 {
 	int ret = MM_UTIL_ERROR_NONE;
-	mm_util_s *handle = (mm_util_s *) MMHandle;
+	mm_util_s *handle = (mm_util_s *) imgp_handle;
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:SET_CROP_AREA");
 
@@ -1490,10 +1490,10 @@ int mm_util_set_crop_area(MMHandleType MMHandle, unsigned int start_x, unsigned 
 	return ret;
 }
 
-int mm_util_transform(MMHandleType MMHandle, media_packet_h src_packet, mm_util_completed_callback completed_callback, void * user_data)
+int mm_util_transform(mm_util_imgp_h imgp_handle, media_packet_h src_packet, mm_util_completed_callback completed_callback, void * user_data)
 {
 	int ret = MM_UTIL_ERROR_NONE;
-	mm_util_s *handle = (mm_util_s *) MMHandle;
+	mm_util_s *handle = (mm_util_s *) imgp_handle;
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:TRANSFORM");
 
@@ -1539,11 +1539,11 @@ int mm_util_transform(MMHandleType MMHandle, media_packet_h src_packet, mm_util_
 	return ret;
 }
 
-int mm_util_transform_is_completed(MMHandleType MMHandle, bool *is_completed)
+int mm_util_transform_is_completed(mm_util_imgp_h imgp_handle, bool *is_completed)
 {
 	int ret = MM_UTIL_ERROR_NONE;
 
-	mm_util_s *handle = (mm_util_s *) MMHandle;
+	mm_util_s *handle = (mm_util_s *) imgp_handle;
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:TRANSFORM_IS_COMPLETED");
 
@@ -1566,10 +1566,10 @@ int mm_util_transform_is_completed(MMHandleType MMHandle, bool *is_completed)
 	return ret;
 }
 
-int mm_util_destroy(MMHandleType MMHandle)
+int mm_util_destroy(mm_util_imgp_h imgp_handle)
 {
 	int ret = MM_UTIL_ERROR_NONE;
-	mm_util_s *handle = (mm_util_s*) MMHandle;
+	mm_util_s *handle = (mm_util_s*) imgp_handle;
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:DESTROY");
 
