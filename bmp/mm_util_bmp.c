@@ -33,8 +33,6 @@
 #include <stdio.h>				/* fopen() */
 #include <system_info.h>
 
-#include <glib.h>
-
 #include "mm_util_bmp.h"
 #include "mm_util_debug.h"
 

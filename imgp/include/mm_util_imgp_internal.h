@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <glib.h>
 #include "mm_util_imgp.h"
 #ifdef __cplusplus
 	extern "C" {
