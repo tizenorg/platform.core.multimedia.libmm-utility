@@ -11,7 +11,6 @@ libmmutil_imgp_la_SOURCES = mm_util_imgp.c
 
 libmmutil_imgp_la_CFLAGS = -I$(srcdir)/include \
 			   -I$(includedir)/drm \
-			   $(MMCOMMON_CFLAGS) \
                            $(GLIB_CFLAGS) \
                            $(GMODULE_CFLAGS) \
                            $(DRM_CFLAGS) \
@@ -23,8 +22,7 @@ libmmutil_imgp_la_CFLAGS = -I$(srcdir)/include \
                            $(TBM_CFLAGS) \
                            $(DLOG_CFLAGS)
 
-libmmutil_imgp_la_LIBADD = $(MMCOMMON_LIBS) \
-                           $(GLIB_LIBS) \
+libmmutil_imgp_la_LIBADD = $(GLIB_LIBS) \
                            $(GMODULE_LIBS) \
                            $(DRM_LIBS) \
                            $(DRM_DEVEL_LIBS) \

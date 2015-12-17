@@ -4,7 +4,7 @@ mm_util_imgp_testsuite_SOURCES = mm_util_imgp_testsuite.c
 
 mm_util_imgp_testsuite_CFLAGS = -I$(srcdir)/../include \
                                 -I$(includedir)/drm \
-				  $(MMCOMMON_CFLAGS) \
+				  $(GMODULE_CFLAGS) \
 				  $(MMCAMCORDER_CFLAGS) \
 				  $(DRM_CFLAGS) \
 				  $(DRM_DEVEL_CFLAGS) \
@@ -20,7 +20,7 @@ mm_util_imgp_testsuite_CFLAGS = -I$(srcdir)/../include \
 mm_util_imgp_testsuite_DEPENDENCIES = $(srcdir)/../libmmutil_imgp.la
 
 mm_util_imgp_testsuite_LDADD = $(srcdir)/../libmmutil_imgp.la \
- 			       $(MMCOMMON_LIBS) \
+			       $(GMODULE_LIBS) \
 			       $(MMCAMCORDER_LIBS) \
 			       $(DRM_LIBS) \
 			       $(DRM_DEVEL_LIBS) \

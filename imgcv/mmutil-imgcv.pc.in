@@ -5,7 +5,7 @@ includedir = @includedir@
 
 Name : mmutil-imgcv
 Description : Multimedia Framework Utility Library
-Requires : @IMGCV_REQPKG@ mm-common opencv
+Requires : @IMGCV_REQPKG@ opencv
 Version : @VERSION@
 Libs : -L${libdir} -lmmutil_imgcv
 Cflags : -I${includedir}/mmf -DLIBPREFIX=\"${libdir}\"

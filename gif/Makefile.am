@@ -11,13 +11,11 @@ libmmutil_gif_la_CFLAGS = -I$(srcdir)/include \
 				-I$(srcdir)/../imgp/include \
 				$(GLIB_CFLAGS) \
 				$(MEDIA_CFLAGS) \
-				$(MMCOMMON_CFLAGS) \
 				-I/usr/include \
 				$(SYSTEMINFO_CFLAGS) \
 				$(srcdir)/../imgp/libmmutil_imgp.la
 
-libmmutil_gif_la_LIBADD = $(MMCOMMON_LIBS) -lgif -ldl -lexif -lttrace\
-				$(GLIB_LIBS) \
+libmmutil_gif_la_LIBADD = $(GLIB_LIBS) -lgif -ldl -lexif -lttrace\
 				$(GMODULE_LIBS) \
 				$(SYSTEMINFO_LIBS)\
 				$(MEDIA_LIBS)

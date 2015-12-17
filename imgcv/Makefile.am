@@ -10,15 +10,13 @@ libmmutil_imgcv_la_SOURCES = mm_util_imgcv.c
 
 libmmutil_imgcv_la_CFLAGS = -I$(srcdir)/include \
 				-I$(srcdir)/../imgp/include \
-				$(MMCOMMON_CFLAGS) \
 				$(GLIB_CFLAGS) \
 				$(GMODULE_CFLAGS) \
 				$(MEDIA_CFLAGS) \
 				$(OPENCV_CFLAGS) \
 				$(srcdir)/../imgp/libmmutil_imgp.la
 
-libmmutil_imgcv_la_LIBADD = $(MMCOMMON_LIBS) \
-				$(GLIB_LIBS) \
+libmmutil_imgcv_la_LIBADD = $(GLIB_LIBS) \
 				$(GMODULE_LIBS) \
 				$(MEDIA_LIBS) \
 				$(OPENCV_LIBS)

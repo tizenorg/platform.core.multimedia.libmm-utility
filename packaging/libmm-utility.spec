@@ -1,6 +1,6 @@
 Name:       libmm-utility
 Summary:    Multimedia Framework Utility Library
-Version:    0.19
+Version:    0.20
 Release:    0
 Group:      System/Libraries
 License:    Apache-2.0
@@ -8,7 +8,6 @@ Source0:    %{name}-%{version}.tar.gz
 Source1001: libmm-utility.manifest
 Requires(post):    /sbin/ldconfig
 Requires(postun):  /sbin/ldconfig
-BuildRequires:  pkgconfig(mm-common)
 BuildRequires:  pkgconfig(dlog)
 BuildRequires:  pkgconfig(glib-2.0)
 BuildRequires:  pkgconfig(gmodule-2.0)

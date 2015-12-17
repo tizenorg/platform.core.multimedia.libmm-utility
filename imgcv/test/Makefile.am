@@ -14,6 +14,5 @@ mm_util_imgcv_testsuite_DEPENDENCIES = $(srcdir)/../libmmutil_imgcv.la
 mm_util_imgcv_testsuite_DEPENDENCIES += $(srcdir)/../../jpeg/libmmutil_jpeg.la
 
 mm_util_imgcv_testsuite_LDADD = $(srcdir)/../libmmutil_imgcv.la \
-				  $(srcdir)/../../jpeg/libmmutil_jpeg.la \
-				  $(MMCOMMON_LIBS)
+				  $(srcdir)/../../jpeg/libmmutil_jpeg.la
 
