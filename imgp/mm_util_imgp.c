@@ -1150,7 +1150,7 @@ static int __mm_util_transform_exec(mm_util_s * handle, media_packet_h src_packe
 	unsigned int dst_width = 0, dst_height = 0;
 	uint64_t size = 0;
 
-	if (media_packet_get_format(src_packet, &src_fmt) != MM_UTIL_ERROR_NONE) {
+	if (media_packet_get_format(src_packet, &src_fmt) != MEDIA_PACKET_ERROR_NONE) {
 		mm_util_error("Imedia_packet_get_format)");
 		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
@@ -1173,7 +1173,7 @@ static int __mm_util_transform_exec(mm_util_s * handle, media_packet_h src_packe
 			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 
-		if (media_packet_get_buffer_size(handle->src_packet, &size) == MM_UTIL_ERROR_NONE) {
+		if (media_packet_get_buffer_size(handle->src_packet, &size) == MEDIA_PACKET_ERROR_NONE) {
 			handle->src_buf_size = (guint)size;
 			mm_util_debug("src buffer(%p) %d size: %d", handle->src_packet, handle->src_packet, handle->src_buf_size);
 		} else {
@@ -1270,14 +1270,14 @@ static int __mm_util_transform_exec(mm_util_s * handle, media_packet_h src_packe
 			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		}
 
-		if (media_packet_create_alloc(dst_fmt, (media_packet_finalize_cb)_mm_util_transform_packet_finalize_callback, NULL, &handle->dst_packet) != MM_UTIL_ERROR_NONE) {
+		if (media_packet_create_alloc(dst_fmt, (media_packet_finalize_cb)_mm_util_transform_packet_finalize_callback, NULL, &handle->dst_packet) != MEDIA_PACKET_ERROR_NONE) {
 			mm_util_error("[Error] Create allocation memory");
 			media_format_unref(src_fmt);
 			media_format_unref(dst_fmt);
 			return MM_UTIL_ERROR_INVALID_PARAMETER;
 		} else {
 			mm_util_debug("Success - dst media packet");
-			if (media_packet_get_buffer_size(handle->dst_packet, &size) != MM_UTIL_ERROR_NONE) {
+			if (media_packet_get_buffer_size(handle->dst_packet, &size) != MEDIA_PACKET_ERROR_NONE) {
 				mm_util_error("Imedia_packet_get_format)");
 				media_format_unref(src_fmt);
 				media_format_unref(dst_fmt);
