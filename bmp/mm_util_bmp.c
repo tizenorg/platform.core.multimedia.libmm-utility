@@ -122,7 +122,7 @@ void bitmap_destroy(void *bitmap)
 	free(bitmap);
 }
 
-static int read_bmp(mm_util_bmp_data * decoded, const char *filename, void *memory, unsigned long long src_size)
+static int read_bmp(mm_util_bmp_data *decoded, const char *filename, void *memory, unsigned long long src_size)
 {
 	bmp_bitmap_callback_vt bitmap_callbacks = {
 		bitmap_create,
@@ -181,7 +181,7 @@ static int read_bmp(mm_util_bmp_data * decoded, const char *filename, void *memo
 	return res;
 }
 
-int mm_util_decode_from_bmp_file(mm_util_bmp_data * decoded, const char *filename)
+int mm_util_decode_from_bmp_file(mm_util_bmp_data *decoded, const char *filename)
 {
 	int ret;
 
@@ -192,7 +192,7 @@ int mm_util_decode_from_bmp_file(mm_util_bmp_data * decoded, const char *filenam
 	return ret;
 }
 
-int mm_util_decode_from_bmp_memory(mm_util_bmp_data * decoded, void **memory, unsigned long long src_size)
+int mm_util_decode_from_bmp_memory(mm_util_bmp_data *decoded, void **memory, unsigned long long src_size)
 {
 	int ret;
 
@@ -203,22 +203,22 @@ int mm_util_decode_from_bmp_memory(mm_util_bmp_data * decoded, void **memory, un
 	return ret;
 }
 
-unsigned long mm_util_decode_get_width(mm_util_bmp_data * data)
+unsigned long mm_util_decode_get_width(mm_util_bmp_data *data)
 {
 	return data->width;
 }
 
-unsigned long mm_util_decode_get_height(mm_util_bmp_data * data)
+unsigned long mm_util_decode_get_height(mm_util_bmp_data *data)
 {
 	return data->height;
 }
 
-unsigned long long mm_util_decode_get_size(mm_util_bmp_data * data)
+unsigned long long mm_util_decode_get_size(mm_util_bmp_data *data)
 {
 	return data->size;
 }
 
-int mm_util_encode_bmp_to_file(mm_util_bmp_data * encoded, const char *filename)
+int mm_util_encode_bmp_to_file(mm_util_bmp_data *encoded, const char *filename)
 {
 	bmpfile_t *bmp;
 	rgb_pixel_t pixel = { 0, 0, 0, 0 };
@@ -246,12 +246,12 @@ int mm_util_encode_bmp_to_file(mm_util_bmp_data * encoded, const char *filename)
 	return MM_UTIL_ERROR_NONE;
 }
 
-void mm_util_bmp_encode_set_width(mm_util_bmp_data * data, unsigned long width)
+void mm_util_bmp_encode_set_width(mm_util_bmp_data *data, unsigned long width)
 {
 	data->width = width;
 }
 
-void mm_util_bmp_encode_set_height(mm_util_bmp_data * data, unsigned long height)
+void mm_util_bmp_encode_set_height(mm_util_bmp_data *data, unsigned long height)
 {
 	data->height = height;
 }

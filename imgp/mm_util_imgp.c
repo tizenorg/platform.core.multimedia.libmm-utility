@@ -27,10 +27,10 @@
 #include <ttrace.h>
 #define TTRACE_BEGIN(NAME) traceBegin(TTRACE_TAG_IMAGE, NAME)
 #define TTRACE_END() traceEnd(TTRACE_TAG_IMAGE)
-#else //ENABLE_TTRACE
+#else /* ENABLE_TTRACE */
 #define TTRACE_BEGIN(NAME)
 #define TTRACE_END()
-#endif //ENABLE_TTRACE
+#endif /* ENABLE_TTRACE */
 
 #define MM_UTIL_ROUND_UP_2(num) (((num)+1)&~1)
 #define MM_UTIL_ROUND_UP_4(num) (((num)+3)&~3)
@@ -41,14 +41,14 @@
 #define DIV_ROUND_UP_X(v, x) (((v) + GEN_MASK(x)) >> (x))
 #define GST "gstcs"
 
-typedef gboolean(*IMGPInfoFunc) (imgp_info_s*, const unsigned char*, unsigned char*, imgp_plugin_type_e);
-static int __mm_util_transform_exec(mm_util_s * handle, media_packet_h src_packet);
+typedef gboolean(*IMGPInfoFunc) (imgp_info_s *, const unsigned char *, unsigned char *, imgp_plugin_type_e);
+static int __mm_util_transform_exec(mm_util_s *handle, media_packet_h src_packet);
 
 static int check_valid_picture_size(int width, int height)
 {
-	if ((int)width > 0 && (int)height > 0 && (width + 128)*(unsigned long long)(height + 128) < INT_MAX/4) {
+	if ((int)width > 0 && (int)height > 0 &&
+		((width + 128) * (unsigned long long)(height + 128)) < INT_MAX/4)
 		return MM_UTIL_ERROR_NONE;
-	}
 
 	return MM_UTIL_ERROR_INVALID_PARAMETER;
 }
@@ -57,9 +57,8 @@ static void __mm_destroy_temp_buffer(unsigned char *buffer[])
 {
 	int i = 0;
 
-	for (i = 0; i < 4; i++) {
+	for (i = 0; i < 4; i++)
 		IMGP_FREE(buffer[i]);
-	}
 }
 
 static gboolean __mm_cannot_convert_format(mm_util_img_format src_format, mm_util_img_format dst_format)
@@ -89,7 +88,7 @@ static gboolean __mm_cannot_convert_format(mm_util_img_format src_format, mm_uti
 	return _bool;
 }
 
-static gboolean __mm_gst_can_resize_format(char* __format_label)
+static gboolean __mm_gst_can_resize_format(char *__format_label)
 {
 	gboolean _bool = FALSE;
 
@@ -110,7 +109,7 @@ static gboolean __mm_gst_can_resize_format(char* __format_label)
 	return _bool;
 }
 
-static gboolean __mm_gst_can_rotate_format(const char* __format_label)
+static gboolean __mm_gst_can_rotate_format(const char *__format_label)
 {
 	gboolean _bool = FALSE;
 
@@ -208,11 +207,11 @@ static gboolean __mm_select_resize_plugin(mm_util_img_format _format)
 
 	mm_util_debug("_format: %d", _format);
 
-	if ((_format == MM_UTIL_IMG_FMT_UYVY) || (_format == MM_UTIL_IMG_FMT_YUYV) || (_format == MM_UTIL_IMG_FMT_RGBA8888) || (_format == MM_UTIL_IMG_FMT_BGRX8888)) {
+	if ((_format == MM_UTIL_IMG_FMT_UYVY) || (_format == MM_UTIL_IMG_FMT_YUYV) ||
+		(_format == MM_UTIL_IMG_FMT_RGBA8888) || (_format == MM_UTIL_IMG_FMT_BGRX8888))
 		_bool = FALSE;
-	} else {
+	else
 		_bool = TRUE;
-	}
 
 	return _bool;
 }
@@ -270,69 +269,69 @@ int __mm_util_get_buffer_size(mm_util_img_format format, unsigned int width, uns
 	}
 
 	switch (format) {
-		case MM_UTIL_IMG_FMT_I420:
-		case MM_UTIL_IMG_FMT_YUV420:
-			x_chroma_shift = 1;
-			y_chroma_shift = 1;
-			stride = MM_UTIL_ROUND_UP_4(width);
-			h2 = ROUND_UP_X(height, x_chroma_shift);
-			size = stride * h2;
-			w2 = DIV_ROUND_UP_X(width, x_chroma_shift);
-			stride2 = MM_UTIL_ROUND_UP_4(w2);
-			h2 = DIV_ROUND_UP_X(height, y_chroma_shift);
-			size2 = stride2 * h2;
-			*imgsize = size + 2 * size2;
-			break;
-		case MM_UTIL_IMG_FMT_YUV422:
-		case MM_UTIL_IMG_FMT_YUYV:
-		case MM_UTIL_IMG_FMT_UYVY:
-		case MM_UTIL_IMG_FMT_NV16:
-		case MM_UTIL_IMG_FMT_NV61:
-			stride = MM_UTIL_ROUND_UP_4(width) * 2;
-			size = stride * height;
-			*imgsize = size;
-			break;
+	case MM_UTIL_IMG_FMT_I420:
+	case MM_UTIL_IMG_FMT_YUV420:
+		x_chroma_shift = 1;
+		y_chroma_shift = 1;
+		stride = MM_UTIL_ROUND_UP_4(width);
+		h2 = ROUND_UP_X(height, x_chroma_shift);
+		size = stride * h2;
+		w2 = DIV_ROUND_UP_X(width, x_chroma_shift);
+		stride2 = MM_UTIL_ROUND_UP_4(w2);
+		h2 = DIV_ROUND_UP_X(height, y_chroma_shift);
+		size2 = stride2 * h2;
+		*imgsize = size + 2 * size2;
+		break;
+	case MM_UTIL_IMG_FMT_YUV422:
+	case MM_UTIL_IMG_FMT_YUYV:
+	case MM_UTIL_IMG_FMT_UYVY:
+	case MM_UTIL_IMG_FMT_NV16:
+	case MM_UTIL_IMG_FMT_NV61:
+		stride = MM_UTIL_ROUND_UP_4(width) * 2;
+		size = stride * height;
+		*imgsize = size;
+		break;
 
-		case MM_UTIL_IMG_FMT_RGB565:
-			stride = MM_UTIL_ROUND_UP_4(width) * 2;
-			size = stride * MM_UTIL_ROUND_UP_2(height);
-			*imgsize = size;
-			break;
+	case MM_UTIL_IMG_FMT_RGB565:
+		stride = MM_UTIL_ROUND_UP_4(width) * 2;
+		size = stride * MM_UTIL_ROUND_UP_2(height);
+		*imgsize = size;
+		break;
 
-		case MM_UTIL_IMG_FMT_RGB888:
-			stride = MM_UTIL_ROUND_UP_4(width) * 3;
-			size = stride * MM_UTIL_ROUND_UP_2(height);
-			*imgsize = size;
-			break;
+	case MM_UTIL_IMG_FMT_RGB888:
+		stride = MM_UTIL_ROUND_UP_4(width) * 3;
+		size = stride * MM_UTIL_ROUND_UP_2(height);
+		*imgsize = size;
+		break;
 
-		case MM_UTIL_IMG_FMT_ARGB8888:
-		case MM_UTIL_IMG_FMT_BGRA8888:
-		case MM_UTIL_IMG_FMT_RGBA8888:
-		case MM_UTIL_IMG_FMT_BGRX8888:
-			stride = width * 4;
-			size = stride * MM_UTIL_ROUND_UP_2(height);
-			*imgsize = size;
-			break;
+	case MM_UTIL_IMG_FMT_ARGB8888:
+	case MM_UTIL_IMG_FMT_BGRA8888:
+	case MM_UTIL_IMG_FMT_RGBA8888:
+	case MM_UTIL_IMG_FMT_BGRX8888:
+		stride = width * 4;
+		size = stride * MM_UTIL_ROUND_UP_2(height);
+		*imgsize = size;
+		break;
 
 
-		case MM_UTIL_IMG_FMT_NV12:
-		case MM_UTIL_IMG_FMT_NV12_TILED:
-			x_chroma_shift = 1;
-			y_chroma_shift = 1;
-			stride = MM_UTIL_ROUND_UP_4(width);
-			h2 = ROUND_UP_X(height, y_chroma_shift);
-			size = stride * h2;
-			w2 = 2 * DIV_ROUND_UP_X(width, x_chroma_shift);
-			stride2 = MM_UTIL_ROUND_UP_4(w2);
-			h2 = DIV_ROUND_UP_X(height, y_chroma_shift);
-			size2 = stride2 * h2;
-			*imgsize = size + size2;
-			break;
+	case MM_UTIL_IMG_FMT_NV12:
+	case MM_UTIL_IMG_FMT_NV12_TILED:
+		x_chroma_shift = 1;
+		y_chroma_shift = 1;
+		stride = MM_UTIL_ROUND_UP_4(width);
+		h2 = ROUND_UP_X(height, y_chroma_shift);
+		size = stride * h2;
+		w2 = 2 * DIV_ROUND_UP_X(width, x_chroma_shift);
+		stride2 = MM_UTIL_ROUND_UP_4(w2);
+		h2 = DIV_ROUND_UP_X(height, y_chroma_shift);
+		size2 = stride2 * h2;
+		*imgsize = size + size2;
+		break;
 
-		default:
-			mm_util_error("Not supported format");
-			TTRACE_END();
-			return MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
+	default:
+		mm_util_error("Not supported format");
+		TTRACE_END();
+		return MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
 	}
 	mm_util_debug("format: %d, *imgsize: %d\n", format, *imgsize);
 
@@ -350,44 +349,44 @@ static int __mm_confirm_dst_width_height(unsigned int src_width, unsigned int sr
 	}
 
 	switch (angle) {
-		case MM_UTIL_ROTATE_0:
-		case MM_UTIL_ROTATE_180:
-		case MM_UTIL_ROTATE_FLIP_HORZ:
-		case MM_UTIL_ROTATE_FLIP_VERT:
-			if (*dst_width != src_width) {
-				mm_util_debug("*dst_width: %d", *dst_width);
-				*dst_width = src_width;
-				mm_util_debug("#Confirmed# *dst_width: %d", *dst_width);
-			}
-			if (*dst_height != src_height) {
-				mm_util_debug("*dst_height: %d", *dst_height);
-				*dst_height = src_height;
-				mm_util_debug("#Confirmed# *dst_height: %d", *dst_height);
-			}
-			break;
-		case MM_UTIL_ROTATE_90:
-		case MM_UTIL_ROTATE_270:
-			if (*dst_width != src_height) {
-				mm_util_debug("*dst_width: %d", *dst_width);
-				*dst_width = src_height;
-				mm_util_debug("#Confirmed# *dst_width: %d", *dst_width);
-			}
-			if (*dst_height != src_width) {
-				mm_util_debug("*dst_height: %d", *dst_height);
-				*dst_height = src_width;
-				mm_util_debug("#Confirmed# *dst_height: %d", *dst_height);
-			}
-			break;
+	case MM_UTIL_ROTATE_0:
+	case MM_UTIL_ROTATE_180:
+	case MM_UTIL_ROTATE_FLIP_HORZ:
+	case MM_UTIL_ROTATE_FLIP_VERT:
+		if (*dst_width != src_width) {
+			mm_util_debug("*dst_width: %d", *dst_width);
+			*dst_width = src_width;
+			mm_util_debug("#Confirmed# *dst_width: %d", *dst_width);
+		}
+		if (*dst_height != src_height) {
+			mm_util_debug("*dst_height: %d", *dst_height);
+			*dst_height = src_height;
+			mm_util_debug("#Confirmed# *dst_height: %d", *dst_height);
+		}
+		break;
+	case MM_UTIL_ROTATE_90:
+	case MM_UTIL_ROTATE_270:
+		if (*dst_width != src_height) {
+			mm_util_debug("*dst_width: %d", *dst_width);
+			*dst_width = src_height;
+			mm_util_debug("#Confirmed# *dst_width: %d", *dst_width);
+		}
+		if (*dst_height != src_width) {
+			mm_util_debug("*dst_height: %d", *dst_height);
+			*dst_height = src_width;
+			mm_util_debug("#Confirmed# *dst_height: %d", *dst_height);
+		}
+		break;
 
-		default:
-			mm_util_error("Not supported rotate value");
-			return MM_UTIL_ERROR_INVALID_PARAMETER;
+	default:
+		mm_util_error("Not supported rotate value");
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
 	return ret;
 }
 
-static int __mm_set_format_label(imgp_info_s * _imgp_info_s, mm_util_img_format src_format, mm_util_img_format dst_format)
+static int __mm_set_format_label(imgp_info_s *_imgp_info_s, mm_util_img_format src_format, mm_util_img_format dst_format)
 {
 	int ret = MM_UTIL_ERROR_NONE;
 	char *src_fmt_lable = NULL;
@@ -398,92 +397,92 @@ static int __mm_set_format_label(imgp_info_s * _imgp_info_s, mm_util_img_format 
 	}
 
 	switch (src_format) {
-		case MM_UTIL_IMG_FMT_YUV420:
-			src_fmt_lable = (char *)"YV12";
-			break;
-		case MM_UTIL_IMG_FMT_YUV422:
-			src_fmt_lable = (char *)"Y42B";
-			break;
-		case MM_UTIL_IMG_FMT_I420:
-			src_fmt_lable = (char *)"I420";
-			break;
-		case MM_UTIL_IMG_FMT_NV12:
-			src_fmt_lable = (char *)"NV12";
-			break;
-		case MM_UTIL_IMG_FMT_UYVY:
-			src_fmt_lable = (char *)"UYVY";
-			break;
-		case MM_UTIL_IMG_FMT_YUYV:
-			src_fmt_lable = (char *)"YUYV";
-			break;
-		case MM_UTIL_IMG_FMT_RGB565:
-			src_fmt_lable = (char *)"RGB565";
-			break;
-		case MM_UTIL_IMG_FMT_RGB888:
-			src_fmt_lable = (char *)"RGB888";
-			break;
-		case MM_UTIL_IMG_FMT_ARGB8888:
-			src_fmt_lable = (char *)"ARGB8888";
-			break;
-		case MM_UTIL_IMG_FMT_BGRA8888:
-			src_fmt_lable = (char *)"BGRA8888";
-			break;
-		case MM_UTIL_IMG_FMT_RGBA8888:
-			src_fmt_lable = (char *)"RGBA8888";
-			break;
-		case MM_UTIL_IMG_FMT_BGRX8888:
-			src_fmt_lable = (char *)"BGRX";
-			break;
-		default:
-			mm_util_debug("[%d] Not supported format", src_fmt_lable);
-			break;
+	case MM_UTIL_IMG_FMT_YUV420:
+		src_fmt_lable = (char *)"YV12";
+		break;
+	case MM_UTIL_IMG_FMT_YUV422:
+		src_fmt_lable = (char *)"Y42B";
+		break;
+	case MM_UTIL_IMG_FMT_I420:
+		src_fmt_lable = (char *)"I420";
+		break;
+	case MM_UTIL_IMG_FMT_NV12:
+		src_fmt_lable = (char *)"NV12";
+		break;
+	case MM_UTIL_IMG_FMT_UYVY:
+		src_fmt_lable = (char *)"UYVY";
+		break;
+	case MM_UTIL_IMG_FMT_YUYV:
+		src_fmt_lable = (char *)"YUYV";
+		break;
+	case MM_UTIL_IMG_FMT_RGB565:
+		src_fmt_lable = (char *)"RGB565";
+		break;
+	case MM_UTIL_IMG_FMT_RGB888:
+		src_fmt_lable = (char *)"RGB888";
+		break;
+	case MM_UTIL_IMG_FMT_ARGB8888:
+		src_fmt_lable = (char *)"ARGB8888";
+		break;
+	case MM_UTIL_IMG_FMT_BGRA8888:
+		src_fmt_lable = (char *)"BGRA8888";
+		break;
+	case MM_UTIL_IMG_FMT_RGBA8888:
+		src_fmt_lable = (char *)"RGBA8888";
+		break;
+	case MM_UTIL_IMG_FMT_BGRX8888:
+		src_fmt_lable = (char *)"BGRX";
+		break;
+	default:
+		mm_util_debug("[%d] Not supported format", src_fmt_lable);
+		break;
 	}
 
 	switch (dst_format) {
-		case MM_UTIL_IMG_FMT_YUV420:
-			dst_fmt_lable = (char *)"YV12";
-			break;
-		case MM_UTIL_IMG_FMT_YUV422:
-			dst_fmt_lable = (char *)"Y42B";
-			break;
-		case MM_UTIL_IMG_FMT_I420:
-			dst_fmt_lable = (char *)"I420";
-			break;
-		case MM_UTIL_IMG_FMT_NV12:
-			dst_fmt_lable = (char *)"NV12";
-			break;
-		case MM_UTIL_IMG_FMT_UYVY:
-			dst_fmt_lable = (char *)"UYVY";
-			break;
-		case MM_UTIL_IMG_FMT_YUYV:
-			dst_fmt_lable = (char *)"YUYV";
-			break;
-		case MM_UTIL_IMG_FMT_RGB565:
-			dst_fmt_lable = (char *)"RGB565";
-			break;
-		case MM_UTIL_IMG_FMT_RGB888:
-			dst_fmt_lable = (char *)"RGB888";
-			break;
-		case MM_UTIL_IMG_FMT_ARGB8888:
-			dst_fmt_lable = (char *)"ARGB8888";
-			break;
-		case MM_UTIL_IMG_FMT_BGRA8888:
-			dst_fmt_lable = (char *)"BGRA8888";
-			break;
-		case MM_UTIL_IMG_FMT_RGBA8888:
-			dst_fmt_lable = (char *)"RGBA8888";
-			break;
-		case MM_UTIL_IMG_FMT_BGRX8888:
-			dst_fmt_lable = (char *)"BGRX";
-			break;
-		default:
-			mm_util_error("[%d] Not supported format", dst_format);
-			break;
+	case MM_UTIL_IMG_FMT_YUV420:
+		dst_fmt_lable = (char *)"YV12";
+		break;
+	case MM_UTIL_IMG_FMT_YUV422:
+		dst_fmt_lable = (char *)"Y42B";
+		break;
+	case MM_UTIL_IMG_FMT_I420:
+		dst_fmt_lable = (char *)"I420";
+		break;
+	case MM_UTIL_IMG_FMT_NV12:
+		dst_fmt_lable = (char *)"NV12";
+		break;
+	case MM_UTIL_IMG_FMT_UYVY:
+		dst_fmt_lable = (char *)"UYVY";
+		break;
+	case MM_UTIL_IMG_FMT_YUYV:
+		dst_fmt_lable = (char *)"YUYV";
+		break;
+	case MM_UTIL_IMG_FMT_RGB565:
+		dst_fmt_lable = (char *)"RGB565";
+		break;
+	case MM_UTIL_IMG_FMT_RGB888:
+		dst_fmt_lable = (char *)"RGB888";
+		break;
+	case MM_UTIL_IMG_FMT_ARGB8888:
+		dst_fmt_lable = (char *)"ARGB8888";
+		break;
+	case MM_UTIL_IMG_FMT_BGRA8888:
+		dst_fmt_lable = (char *)"BGRA8888";
+		break;
+	case MM_UTIL_IMG_FMT_RGBA8888:
+		dst_fmt_lable = (char *)"RGBA8888";
+		break;
+	case MM_UTIL_IMG_FMT_BGRX8888:
+		dst_fmt_lable = (char *)"BGRX";
+		break;
+	default:
+		mm_util_error("[%d] Not supported format", dst_format);
+		break;
 	}
 
 	if (src_fmt_lable && dst_fmt_lable) {
 		mm_util_debug("src_fmt_lable: %s dst_fmt_lable: %s", src_fmt_lable, dst_fmt_lable);
-		_imgp_info_s->input_format_label = (char*)malloc(strlen(src_fmt_lable) + 1);
+		_imgp_info_s->input_format_label = (char *)malloc(strlen(src_fmt_lable) + 1);
 		if (_imgp_info_s->input_format_label == NULL) {
 			mm_util_error("[input] input_format_label is null");
 			return MM_UTIL_ERROR_OUT_OF_MEMORY;
@@ -491,7 +490,7 @@ static int __mm_set_format_label(imgp_info_s * _imgp_info_s, mm_util_img_format 
 		memset(_imgp_info_s->input_format_label, 0, strlen(src_fmt_lable) + 1);
 		strncpy(_imgp_info_s->input_format_label, src_fmt_lable, strlen(src_fmt_lable));
 
-		_imgp_info_s->output_format_label = (char*)malloc(strlen(dst_fmt_lable) + 1);
+		_imgp_info_s->output_format_label = (char *)malloc(strlen(dst_fmt_lable) + 1);
 		if (_imgp_info_s->output_format_label == NULL) {
 			mm_util_error("[input] input_format_label is null");
 			IMGP_FREE(_imgp_info_s->input_format_label);
@@ -509,7 +508,7 @@ static int __mm_set_format_label(imgp_info_s * _imgp_info_s, mm_util_img_format 
 	return ret;
 }
 
-static int __mm_set_imgp_info_s(imgp_info_s * _imgp_info_s, mm_util_img_format src_format, unsigned int src_width, unsigned int src_height, mm_util_img_format dst_format, unsigned int dst_width, unsigned int dst_height, mm_util_img_rotate_type angle)
+static int __mm_set_imgp_info_s(imgp_info_s *_imgp_info_s, mm_util_img_format src_format, unsigned int src_width, unsigned int src_height, mm_util_img_format dst_format, unsigned int dst_width, unsigned int dst_height, mm_util_img_rotate_type angle)
 {
 	int ret = MM_UTIL_ERROR_NONE;
 
@@ -541,16 +540,15 @@ static int __mm_set_imgp_info_s(imgp_info_s * _imgp_info_s, mm_util_img_format s
 	return ret;
 }
 
-static GModule * __mm_util_imgp_initialize(imgp_plugin_type_e _imgp_plugin_type_e)
+static GModule *__mm_util_imgp_initialize(imgp_plugin_type_e _imgp_plugin_type_e)
 {
 	GModule *module = NULL;
 	mm_util_fenter();
 
-	if (_imgp_plugin_type_e == IMGP_NEON) {
+	if (_imgp_plugin_type_e == IMGP_NEON)
 		module = g_module_open(PATH_NEON_LIB, G_MODULE_BIND_LAZY);
-	} else if (_imgp_plugin_type_e == IMGP_GSTCS) {
+	else if (_imgp_plugin_type_e == IMGP_GSTCS)
 		module = g_module_open(PATH_GSTCS_LIB, G_MODULE_BIND_LAZY);
-	}
 
 	if (module == NULL) {
 		mm_util_error("%s | %s module open failed", PATH_NEON_LIB, PATH_GSTCS_LIB);
@@ -571,13 +569,13 @@ static IMGPInfoFunc __mm_util_imgp_process(GModule *module)
 		return NULL;
 	}
 
-	g_module_symbol(module, IMGP_FUNC_NAME, (gpointer*)&mm_util_imgp_func);
+	g_module_symbol(module, IMGP_FUNC_NAME, (gpointer *)&mm_util_imgp_func);
 	mm_util_debug("mm_util_imgp_func: %p", mm_util_imgp_func);
 
 	return mm_util_imgp_func;
 }
 
-static int _mm_util_transform_packet_finalize_callback(media_packet_h packet, int err, void* userdata)
+static int _mm_util_transform_packet_finalize_callback(media_packet_h packet, int err, void *userdata)
 {
 	mm_util_debug("==> finalize callback func is called [%d] \n", err);
 	return MEDIA_PACKET_FINALIZE;
@@ -786,46 +784,46 @@ static media_format_mimetype_e __mm_util_mapping_imgp_format_to_mime(mm_util_img
 	media_format_mimetype_e mimetype = -1;
 
 	switch (format) {
-		case MM_UTIL_IMG_FMT_NV12:
-			mimetype = MEDIA_FORMAT_NV12;
-			break;
-		case MM_UTIL_IMG_FMT_NV16:
-			mimetype = MEDIA_FORMAT_NV16;
-			break;
-		case MM_UTIL_IMG_FMT_YUYV:
-			mimetype = MEDIA_FORMAT_YUYV;
-			break;
-		case MM_UTIL_IMG_FMT_UYVY:
-			mimetype = MEDIA_FORMAT_UYVY;
-			break;
-		case MM_UTIL_IMG_FMT_YUV422:
-			mimetype = MEDIA_FORMAT_422P;
-			break;
-		case MM_UTIL_IMG_FMT_I420:
-			mimetype = MEDIA_FORMAT_I420;
-			break;
-		case MM_UTIL_IMG_FMT_YUV420:
-			mimetype = MEDIA_FORMAT_YV12;
-			break;
-		case MM_UTIL_IMG_FMT_RGB565:
-			mimetype = MEDIA_FORMAT_RGB565;
-			break;
-		case MM_UTIL_IMG_FMT_RGB888:
-			mimetype = MEDIA_FORMAT_RGB888;
-			break;
-		case MM_UTIL_IMG_FMT_RGBA8888:
-			mimetype = MEDIA_FORMAT_RGBA;
-			break;
-		case MM_UTIL_IMG_FMT_ARGB8888:
-			mimetype = MEDIA_FORMAT_ARGB;
-			break;
-		case MM_UTIL_IMG_FMT_NV12_TILED:
-			mimetype = MEDIA_FORMAT_NV12T;
-			break;
-		default:
-			mimetype = -1;
-			mm_util_error("Not Supported Format [%d]", format);
-			break;
+	case MM_UTIL_IMG_FMT_NV12:
+		mimetype = MEDIA_FORMAT_NV12;
+		break;
+	case MM_UTIL_IMG_FMT_NV16:
+		mimetype = MEDIA_FORMAT_NV16;
+		break;
+	case MM_UTIL_IMG_FMT_YUYV:
+		mimetype = MEDIA_FORMAT_YUYV;
+		break;
+	case MM_UTIL_IMG_FMT_UYVY:
+		mimetype = MEDIA_FORMAT_UYVY;
+		break;
+	case MM_UTIL_IMG_FMT_YUV422:
+		mimetype = MEDIA_FORMAT_422P;
+		break;
+	case MM_UTIL_IMG_FMT_I420:
+		mimetype = MEDIA_FORMAT_I420;
+		break;
+	case MM_UTIL_IMG_FMT_YUV420:
+		mimetype = MEDIA_FORMAT_YV12;
+		break;
+	case MM_UTIL_IMG_FMT_RGB565:
+		mimetype = MEDIA_FORMAT_RGB565;
+		break;
+	case MM_UTIL_IMG_FMT_RGB888:
+		mimetype = MEDIA_FORMAT_RGB888;
+		break;
+	case MM_UTIL_IMG_FMT_RGBA8888:
+		mimetype = MEDIA_FORMAT_RGBA;
+		break;
+	case MM_UTIL_IMG_FMT_ARGB8888:
+		mimetype = MEDIA_FORMAT_ARGB;
+		break;
+	case MM_UTIL_IMG_FMT_NV12_TILED:
+		mimetype = MEDIA_FORMAT_NV12T;
+		break;
+	default:
+		mimetype = -1;
+		mm_util_error("Not Supported Format [%d]", format);
+		break;
 	}
 
 	mm_util_debug("imgp fmt: %d mimetype fmt: %d", format, mimetype);
@@ -838,46 +836,46 @@ static mm_util_img_format __mm_util_mapping_mime_format_to_imgp(media_format_mim
 	mm_util_img_format format = -1;
 
 	switch (mimetype) {
-		case MEDIA_FORMAT_NV12:
-			format = MM_UTIL_IMG_FMT_NV12;
-			break;
-		case MEDIA_FORMAT_NV16:
-			format = MM_UTIL_IMG_FMT_NV16;
-			break;
-		case MEDIA_FORMAT_YUYV:
-			format = MM_UTIL_IMG_FMT_YUYV;
-			break;
-		case MEDIA_FORMAT_UYVY:
-			format = MM_UTIL_IMG_FMT_UYVY;
-			break;
-		case MEDIA_FORMAT_422P:
-			format = MM_UTIL_IMG_FMT_YUV422;
-			break;
-		case MEDIA_FORMAT_I420:
-			format = MM_UTIL_IMG_FMT_I420;
-			break;
-		case MEDIA_FORMAT_YV12:
-			format = MM_UTIL_IMG_FMT_YUV420;
-			break;
-		case MEDIA_FORMAT_RGB565:
-			format = MM_UTIL_IMG_FMT_RGB565;
-			break;
-		case MEDIA_FORMAT_RGB888:
-			format = MM_UTIL_IMG_FMT_RGB888;
-			break;
-		case MEDIA_FORMAT_RGBA:
-			format = MM_UTIL_IMG_FMT_RGBA8888;
-			break;
-		case MEDIA_FORMAT_ARGB:
-			format = MM_UTIL_IMG_FMT_ARGB8888;
-			break;
-		case MEDIA_FORMAT_NV12T:
-			format = MM_UTIL_IMG_FMT_NV12_TILED;
-			break;
-		default:
-			format = -1;
-			mm_util_error("Not Supported Format [%d]", mimetype);
-			break;
+	case MEDIA_FORMAT_NV12:
+		format = MM_UTIL_IMG_FMT_NV12;
+		break;
+	case MEDIA_FORMAT_NV16:
+		format = MM_UTIL_IMG_FMT_NV16;
+		break;
+	case MEDIA_FORMAT_YUYV:
+		format = MM_UTIL_IMG_FMT_YUYV;
+		break;
+	case MEDIA_FORMAT_UYVY:
+		format = MM_UTIL_IMG_FMT_UYVY;
+		break;
+	case MEDIA_FORMAT_422P:
+		format = MM_UTIL_IMG_FMT_YUV422;
+		break;
+	case MEDIA_FORMAT_I420:
+		format = MM_UTIL_IMG_FMT_I420;
+		break;
+	case MEDIA_FORMAT_YV12:
+		format = MM_UTIL_IMG_FMT_YUV420;
+		break;
+	case MEDIA_FORMAT_RGB565:
+		format = MM_UTIL_IMG_FMT_RGB565;
+		break;
+	case MEDIA_FORMAT_RGB888:
+		format = MM_UTIL_IMG_FMT_RGB888;
+		break;
+	case MEDIA_FORMAT_RGBA:
+		format = MM_UTIL_IMG_FMT_RGBA8888;
+		break;
+	case MEDIA_FORMAT_ARGB:
+		format = MM_UTIL_IMG_FMT_ARGB8888;
+		break;
+	case MEDIA_FORMAT_NV12T:
+		format = MM_UTIL_IMG_FMT_NV12_TILED;
+		break;
+	default:
+		format = -1;
+		mm_util_error("Not Supported Format [%d]", mimetype);
+		break;
 	}
 
 	mm_util_debug("mimetype: %d imgp fmt: %d", mimetype, format);
@@ -887,7 +885,7 @@ static mm_util_img_format __mm_util_mapping_mime_format_to_imgp(media_format_mim
 
 gpointer _mm_util_thread_repeate(gpointer data)
 {
-	mm_util_s* handle = (mm_util_s*) data;
+	mm_util_s *handle = (mm_util_s *) data;
 	int ret = MM_UTIL_ERROR_NONE;
 	gint64 end_time = 0;
 
@@ -915,11 +913,11 @@ gpointer _mm_util_thread_repeate(gpointer data)
 			mm_util_error("[NULL] Queue data");
 		} else {
 			ret = __mm_util_transform_exec(handle, pop_data); /* Need to block */
-			if (ret == MM_UTIL_ERROR_NONE) {
+			if (ret == MM_UTIL_ERROR_NONE)
 				mm_util_debug("Success - transform_exec");
-			} else{
+			else
 				mm_util_error("Error - transform_exec");
-			}
+
 			if (handle->_util_cb->completed_cb) {
 				mm_util_debug("completed_cb");
 				handle->_util_cb->completed_cb(&handle->dst_packet, ret, handle->_util_cb->user_data);
@@ -947,11 +945,10 @@ static int __mm_util_create_thread(mm_util_s *handle)
 	g_mutex_init(&(handle->thread_mutex));
 
 	/*These are a communicator for thread*/
-	if (!handle->queue) {
+	if (!handle->queue)
 		handle->queue = g_async_queue_new();
-	} else {
+	else
 		mm_util_error("ERROR - async queue is already created");
-	}
 
 	g_cond_init(&(handle->thread_cond));
 
@@ -1097,14 +1094,14 @@ static int __mm_util_processing(mm_util_s *handle)
 		if (handle->set_resize || handle->set_crop) {
 			unsigned int temp_swap = 0;
 			switch (handle->dst_rotation) {
-				case  MM_UTIL_ROTATION_90:
-				case MM_UTIL_ROTATION_270:
-					temp_swap = handle->dst_width;
-					handle->dst_width  = handle->dst_height;
-					handle->dst_height = temp_swap;
-					break;
-				default:
-					break;
+			case  MM_UTIL_ROTATION_90:
+			case MM_UTIL_ROTATION_270:
+				temp_swap = handle->dst_width;
+				handle->dst_width  = handle->dst_height;
+				handle->dst_height = temp_swap;
+				break;
+			default:
+				break;
 			}
 		}
 		mm_util_get_image_size(src_format, handle->dst_width, handle->dst_height, &dst_buf_size);
@@ -1140,7 +1137,7 @@ static int __mm_util_processing(mm_util_s *handle)
 	return ret;
 }
 
-static int __mm_util_transform_exec(mm_util_s * handle, media_packet_h src_packet)
+static int __mm_util_transform_exec(mm_util_s *handle, media_packet_h src_packet)
 {
 	int ret = MM_UTIL_ERROR_NONE;
 	media_format_h src_fmt;
@@ -1155,9 +1152,8 @@ static int __mm_util_transform_exec(mm_util_s * handle, media_packet_h src_packe
 		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
-	if (media_format_get_video_info(src_fmt, &src_mimetype, &src_width, &src_height, &src_avg_bps, &src_max_bps) == MEDIA_FORMAT_ERROR_NONE) {
+	if (media_format_get_video_info(src_fmt, &src_mimetype, &src_width, &src_height, &src_avg_bps, &src_max_bps) == MEDIA_FORMAT_ERROR_NONE)
 		mm_util_debug("[Fotmat: %d] W x H : %d x %d", src_mimetype, src_width, src_height);
-	}
 
 	if (__mm_util_check_resolution(src_width, src_height)) {
 		/* src */
@@ -1190,33 +1186,33 @@ static int __mm_util_transform_exec(mm_util_s * handle, media_packet_h src_packe
 		if (handle->set_rotate) {
 			if ((handle->set_crop) || (handle->set_resize)) {
 				switch (handle->dst_rotation) {
-					case MM_UTIL_ROTATION_90:
-					case MM_UTIL_ROTATION_270:
-						dst_width = handle->dst_height;
-						dst_height = handle->dst_width;
-						break;
-					default:
-						dst_width = handle->dst_width;
-						dst_height = handle->dst_height;
-						break;
+				case MM_UTIL_ROTATION_90:
+				case MM_UTIL_ROTATION_270:
+					dst_width = handle->dst_height;
+					dst_height = handle->dst_width;
+					break;
+				default:
+					dst_width = handle->dst_width;
+					dst_height = handle->dst_height;
+					break;
 				}
 			} else {
 				switch (handle->dst_rotation) {
-					case MM_UTIL_ROTATION_90:
-					case MM_UTIL_ROTATION_270:
-						dst_width = handle->dst_width  = handle->src_height;
-						dst_height = handle->dst_height = handle->src_width;
-						break;
-					case MM_UTIL_ROTATION_NONE:
-					case MM_UTIL_ROTATION_180:
-					case MM_UTIL_ROTATION_FLIP_HORZ:
-					case MM_UTIL_ROTATION_FLIP_VERT:
-						dst_width = handle->dst_width  = handle->src_width;
-						dst_height = handle->dst_height = handle->src_height;
-						break;
-					default:
-						mm_util_error("[Error] Wrong dst_rotation");
-						break;
+				case MM_UTIL_ROTATION_90:
+				case MM_UTIL_ROTATION_270:
+					dst_width = handle->dst_width  = handle->src_height;
+					dst_height = handle->dst_height = handle->src_width;
+					break;
+				case MM_UTIL_ROTATION_NONE:
+				case MM_UTIL_ROTATION_180:
+				case MM_UTIL_ROTATION_FLIP_HORZ:
+				case MM_UTIL_ROTATION_FLIP_VERT:
+					dst_width = handle->dst_width  = handle->src_width;
+					dst_height = handle->dst_height = handle->src_height;
+					break;
+				default:
+					mm_util_error("[Error] Wrong dst_rotation");
+					break;
 				}
 			}
 		} else {
@@ -1471,7 +1467,7 @@ int mm_util_set_crop_area(mm_util_imgp_h imgp_handle, unsigned int start_x, unsi
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:SET_CROP_AREA");
 
-	unsigned int dest_width = end_x -start_x;
+	unsigned int dest_width = end_x - start_x;
 	unsigned int dest_height = end_y - start_y;
 
 	if (!handle) {
@@ -1490,7 +1486,7 @@ int mm_util_set_crop_area(mm_util_imgp_h imgp_handle, unsigned int start_x, unsi
 	return ret;
 }
 
-int mm_util_transform(mm_util_imgp_h imgp_handle, media_packet_h src_packet, mm_util_completed_callback completed_callback, void * user_data)
+int mm_util_transform(mm_util_imgp_h imgp_handle, media_packet_h src_packet, mm_util_completed_callback completed_callback, void *user_data)
 {
 	int ret = MM_UTIL_ERROR_NONE;
 	mm_util_s *handle = (mm_util_s *) imgp_handle;
@@ -1569,7 +1565,7 @@ int mm_util_transform_is_completed(mm_util_imgp_h imgp_handle, bool *is_complete
 int mm_util_destroy(mm_util_imgp_h imgp_handle)
 {
 	int ret = MM_UTIL_ERROR_NONE;
-	mm_util_s *handle = (mm_util_s*) imgp_handle;
+	mm_util_s *handle = (mm_util_s *) imgp_handle;
 
 	TTRACE_BEGIN("MM_UTILITY:IMGP:DESTROY");
 
@@ -1624,7 +1620,7 @@ EXPORT_API int mm_util_convert_colorspace(const unsigned char *src, unsigned int
 
 	mm_util_debug("[src] 0x%2x (%d x %d) [dst] 0x%2x", src, src_width, src_height, dst);
 
-	imgp_info_s* _imgp_info_s = (imgp_info_s*)g_malloc0(sizeof(imgp_info_s));
+	imgp_info_s *_imgp_info_s = (imgp_info_s *) g_malloc0(sizeof(imgp_info_s));
 	if (_imgp_info_s == NULL) {
 		mm_util_error("ERROR - alloc handle");
 		TTRACE_END();
@@ -1636,11 +1632,10 @@ EXPORT_API int mm_util_convert_colorspace(const unsigned char *src, unsigned int
 	imgp_plugin_type_e _imgp_plugin_type_e = 0;
 
 	/* Initialize */
-	if (__mm_select_convert_plugin(src_format, dst_format)) {
+	if (__mm_select_convert_plugin(src_format, dst_format))
 		_imgp_plugin_type_e = IMGP_NEON;
-	} else {
+	else
 		_imgp_plugin_type_e = IMGP_GSTCS;
-	}
 
 	mm_util_debug("plugin type: %d", _imgp_plugin_type_e);
 
@@ -1671,7 +1666,7 @@ EXPORT_API int mm_util_convert_colorspace(const unsigned char *src, unsigned int
 		return ret;
 	}
 
-	output_buffer = (unsigned char*)malloc(output_buffer_size);
+	output_buffer = (unsigned char *) malloc(output_buffer_size);
 	if (output_buffer == NULL) {
 		mm_util_error("malloc failed");
 		__mm_util_imgp_finalize(_module, _imgp_info_s);
@@ -1771,7 +1766,7 @@ EXPORT_API int mm_util_resize_image(const unsigned char *src, unsigned int src_w
 
 	mm_util_debug("[src] 0x%2x (%d x %d) [dst] 0x%2x", src, src_width, src_height, dst);
 
-	imgp_info_s* _imgp_info_s = (imgp_info_s*)g_malloc0(sizeof(imgp_info_s));
+	imgp_info_s *_imgp_info_s = (imgp_info_s *) g_malloc0(sizeof(imgp_info_s));
 	if (_imgp_info_s == NULL) {
 		mm_util_error("ERROR - alloc handle");
 		TTRACE_END();
@@ -1783,11 +1778,11 @@ EXPORT_API int mm_util_resize_image(const unsigned char *src, unsigned int src_w
 	imgp_plugin_type_e _imgp_plugin_type_e = 0;
 
 	/* Initialize */
-	if (__mm_select_resize_plugin(src_format)) {
+	if (__mm_select_resize_plugin(src_format))
 		_imgp_plugin_type_e = IMGP_NEON;
-	} else {
+	else
 		_imgp_plugin_type_e = IMGP_GSTCS;
-	}
+
 	mm_util_debug("plugin type: %d", _imgp_plugin_type_e);
 
 	_module = __mm_util_imgp_initialize(_imgp_plugin_type_e);
@@ -1827,7 +1822,7 @@ EXPORT_API int mm_util_resize_image(const unsigned char *src, unsigned int src_w
 		return ret;
 	}
 
-	output_buffer = (unsigned char*)malloc(output_buffer_size);
+	output_buffer = (unsigned char *) malloc(output_buffer_size);
 	if (output_buffer == NULL) {
 		mm_util_error("malloc failed");
 		__mm_util_imgp_finalize(_module, _imgp_info_s);
@@ -1932,7 +1927,7 @@ EXPORT_API int mm_util_rotate_image(const unsigned char *src, unsigned int src_w
 
 	mm_util_debug("[src] 0x%2x (%d x %d) [dst] 0x%2x", src, src_width, src_height, dst);
 
-	imgp_info_s* _imgp_info_s = (imgp_info_s*)g_malloc0(sizeof(imgp_info_s));
+	imgp_info_s *_imgp_info_s = (imgp_info_s *) g_malloc0(sizeof(imgp_info_s));
 	if (_imgp_info_s == NULL) {
 		mm_util_error("ERROR - alloc handle");
 		TTRACE_END();
@@ -1943,11 +1938,11 @@ EXPORT_API int mm_util_rotate_image(const unsigned char *src, unsigned int src_w
 	imgp_plugin_type_e _imgp_plugin_type_e = 0;
 
 	/* Initialize */
-	if (__mm_select_rotate_plugin(src_format, src_width, src_height, angle)) {
+	if (__mm_select_rotate_plugin(src_format, src_width, src_height, angle))
 		_imgp_plugin_type_e = IMGP_NEON;
-	} else {
+	else
 		_imgp_plugin_type_e = IMGP_GSTCS;
-	}
+
 	mm_util_debug("plugin type: %d", _imgp_plugin_type_e);
 
 	_module = __mm_util_imgp_initialize(_imgp_plugin_type_e);
@@ -1994,7 +1989,7 @@ EXPORT_API int mm_util_rotate_image(const unsigned char *src, unsigned int src_w
 		return ret;
 	}
 
-	output_buffer = (unsigned char*)malloc(output_buffer_size);
+	output_buffer = (unsigned char *) malloc(output_buffer_size);
 	if (output_buffer == NULL) {
 		mm_util_error("malloc failed");
 		__mm_util_imgp_finalize(_module, _imgp_info_s);
@@ -2094,41 +2089,41 @@ unsigned int crop_start_x, unsigned int crop_start_y, unsigned int *crop_dest_wi
 	}
 
 	switch (src_format) {
-		case MM_UTIL_IMG_FMT_RGB888: {
-			ret = __mm_util_crop_rgb888(src, src_width, src_height, src_format, crop_start_x, crop_start_y, *crop_dest_width, *crop_dest_height, dst);
-			break;
-			}
-		case MM_UTIL_IMG_FMT_RGB565: {
-			ret = __mm_util_crop_rgb565(src, src_width, src_height, src_format, crop_start_x, crop_start_y, *crop_dest_width, *crop_dest_height, dst);
-			break;
-			}
-		case MM_UTIL_IMG_FMT_ARGB8888:
-		case MM_UTIL_IMG_FMT_BGRA8888:
-		case MM_UTIL_IMG_FMT_RGBA8888:
-		case MM_UTIL_IMG_FMT_BGRX8888: {
-			ret = __mm_util_crop_rgba32(src, src_width, src_height, src_format, crop_start_x, crop_start_y, *crop_dest_width, *crop_dest_height, dst);
-			break;
-			}
-		case MM_UTIL_IMG_FMT_I420:
-		case MM_UTIL_IMG_FMT_YUV420: {
-			if ((*crop_dest_width % 2) != 0) {
-				mm_util_warn("#YUV Width value(%d) must be even at least# ", *crop_dest_width);
-				*crop_dest_width = ((*crop_dest_width+1)>>1)<<1;
-				mm_util_debug("Image isplay is suceeded when YUV crop width value %d", *crop_dest_width);
-			}
+	case MM_UTIL_IMG_FMT_RGB888: {
+		ret = __mm_util_crop_rgb888(src, src_width, src_height, src_format, crop_start_x, crop_start_y, *crop_dest_width, *crop_dest_height, dst);
+		break;
+		}
+	case MM_UTIL_IMG_FMT_RGB565: {
+		ret = __mm_util_crop_rgb565(src, src_width, src_height, src_format, crop_start_x, crop_start_y, *crop_dest_width, *crop_dest_height, dst);
+		break;
+		}
+	case MM_UTIL_IMG_FMT_ARGB8888:
+	case MM_UTIL_IMG_FMT_BGRA8888:
+	case MM_UTIL_IMG_FMT_RGBA8888:
+	case MM_UTIL_IMG_FMT_BGRX8888: {
+		ret = __mm_util_crop_rgba32(src, src_width, src_height, src_format, crop_start_x, crop_start_y, *crop_dest_width, *crop_dest_height, dst);
+		break;
+		}
+	case MM_UTIL_IMG_FMT_I420:
+	case MM_UTIL_IMG_FMT_YUV420: {
+		if ((*crop_dest_width % 2) != 0) {
+			mm_util_warn("#YUV Width value(%d) must be even at least# ", *crop_dest_width);
+			*crop_dest_width = ((*crop_dest_width+1)>>1)<<1;
+			mm_util_debug("Image isplay is suceeded when YUV crop width value %d", *crop_dest_width);
+		}
 
-			if ((*crop_dest_height % 2) != 0) { /* height value must be also even when crop yuv image */
-				mm_util_warn("#YUV Height value(%d) must be even at least# ", *crop_dest_height);
-				*crop_dest_height = ((*crop_dest_height+1)>>1)<<1;
-				mm_util_debug("Image isplay is suceeded when YUV crop height value %d", *crop_dest_height);
-			}
+		if ((*crop_dest_height % 2) != 0) { /* height value must be also even when crop yuv image */
+			mm_util_warn("#YUV Height value(%d) must be even at least# ", *crop_dest_height);
+			*crop_dest_height = ((*crop_dest_height+1)>>1)<<1;
+			mm_util_debug("Image isplay is suceeded when YUV crop height value %d", *crop_dest_height);
+		}
 
-			ret = __mm_util_crop_yuv420(src, src_width, src_height, src_format, crop_start_x, crop_start_y, *crop_dest_width, *crop_dest_height, dst);
-			break;
-			}
-		default:
-			mm_util_debug("Not supported format");
-			ret = MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
+		ret = __mm_util_crop_yuv420(src, src_width, src_height, src_format, crop_start_x, crop_start_y, *crop_dest_width, *crop_dest_height, dst);
+		break;
+		}
+	default:
+		mm_util_debug("Not supported format");
+		ret = MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
 	}
 
 	TTRACE_END();
@@ -2160,69 +2155,69 @@ EXPORT_API int mm_util_get_image_size(mm_util_img_format format, unsigned int wi
 	}
 
 	switch (format) {
-		case MM_UTIL_IMG_FMT_I420:
-		case MM_UTIL_IMG_FMT_YUV420:
-			x_chroma_shift = 1;
-			y_chroma_shift = 1;
-			stride = MM_UTIL_ROUND_UP_4(width);
-			h2 = ROUND_UP_X(height, x_chroma_shift);
-			size = stride * h2;
-			w2 = DIV_ROUND_UP_X(width, x_chroma_shift);
-			stride2 = MM_UTIL_ROUND_UP_4(w2);
-			h2 = DIV_ROUND_UP_X(height, y_chroma_shift);
-			size2 = stride2 * h2;
-			*imgsize = size + 2 * size2;
-			break;
-		case MM_UTIL_IMG_FMT_YUV422:
-		case MM_UTIL_IMG_FMT_YUYV:
-		case MM_UTIL_IMG_FMT_UYVY:
-		case MM_UTIL_IMG_FMT_NV16:
-		case MM_UTIL_IMG_FMT_NV61:
-			stride = MM_UTIL_ROUND_UP_4(width) * 2;
-			size = stride * height;
-			*imgsize = size;
-			break;
+	case MM_UTIL_IMG_FMT_I420:
+	case MM_UTIL_IMG_FMT_YUV420:
+		x_chroma_shift = 1;
+		y_chroma_shift = 1;
+		stride = MM_UTIL_ROUND_UP_4(width);
+		h2 = ROUND_UP_X(height, x_chroma_shift);
+		size = stride * h2;
+		w2 = DIV_ROUND_UP_X(width, x_chroma_shift);
+		stride2 = MM_UTIL_ROUND_UP_4(w2);
+		h2 = DIV_ROUND_UP_X(height, y_chroma_shift);
+		size2 = stride2 * h2;
+		*imgsize = size + 2 * size2;
+		break;
+	case MM_UTIL_IMG_FMT_YUV422:
+	case MM_UTIL_IMG_FMT_YUYV:
+	case MM_UTIL_IMG_FMT_UYVY:
+	case MM_UTIL_IMG_FMT_NV16:
+	case MM_UTIL_IMG_FMT_NV61:
+		stride = MM_UTIL_ROUND_UP_4(width) * 2;
+		size = stride * height;
+		*imgsize = size;
+		break;
 
-		case MM_UTIL_IMG_FMT_RGB565:
-			stride = MM_UTIL_ROUND_UP_4(width) * 2;
-			size = stride * height;
-			*imgsize = size;
-			break;
+	case MM_UTIL_IMG_FMT_RGB565:
+		stride = MM_UTIL_ROUND_UP_4(width) * 2;
+		size = stride * height;
+		*imgsize = size;
+		break;
 
-		case MM_UTIL_IMG_FMT_RGB888:
-			stride = MM_UTIL_ROUND_UP_4(width) * 3;
-			size = stride * height;
-			*imgsize = size;
-			break;
+	case MM_UTIL_IMG_FMT_RGB888:
+		stride = MM_UTIL_ROUND_UP_4(width) * 3;
+		size = stride * height;
+		*imgsize = size;
+		break;
 
-		case MM_UTIL_IMG_FMT_ARGB8888:
-		case MM_UTIL_IMG_FMT_BGRA8888:
-		case MM_UTIL_IMG_FMT_RGBA8888:
-		case MM_UTIL_IMG_FMT_BGRX8888:
-			stride = width * 4;
-			size = stride * height;
-			*imgsize = size;
-			break;
+	case MM_UTIL_IMG_FMT_ARGB8888:
+	case MM_UTIL_IMG_FMT_BGRA8888:
+	case MM_UTIL_IMG_FMT_RGBA8888:
+	case MM_UTIL_IMG_FMT_BGRX8888:
+		stride = width * 4;
+		size = stride * height;
+		*imgsize = size;
+		break;
 
 
-		case MM_UTIL_IMG_FMT_NV12:
-		case MM_UTIL_IMG_FMT_NV12_TILED:
-			x_chroma_shift = 1;
-			y_chroma_shift = 1;
-			stride = MM_UTIL_ROUND_UP_4(width);
-			h2 = ROUND_UP_X(height, y_chroma_shift);
-			size = stride * h2;
-			w2 = 2 * DIV_ROUND_UP_X(width, x_chroma_shift);
-			stride2 = MM_UTIL_ROUND_UP_4(w2);
-			h2 = DIV_ROUND_UP_X(height, y_chroma_shift);
-			size2 = stride2 * h2;
-			*imgsize = size + size2;
-			break;
+	case MM_UTIL_IMG_FMT_NV12:
+	case MM_UTIL_IMG_FMT_NV12_TILED:
+		x_chroma_shift = 1;
+		y_chroma_shift = 1;
+		stride = MM_UTIL_ROUND_UP_4(width);
+		h2 = ROUND_UP_X(height, y_chroma_shift);
+		size = stride * h2;
+		w2 = 2 * DIV_ROUND_UP_X(width, x_chroma_shift);
+		stride2 = MM_UTIL_ROUND_UP_4(w2);
+		h2 = DIV_ROUND_UP_X(height, y_chroma_shift);
+		size2 = stride2 * h2;
+		*imgsize = size + size2;
+		break;
 
-		default:
-			mm_util_error("Not supported format");
-			TTRACE_END();
-			return MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
+	default:
+		mm_util_error("Not supported format");
+		TTRACE_END();
+		return MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
 	}
 	mm_util_debug("format: %d, *imgsize: %d\n", format, *imgsize);
 

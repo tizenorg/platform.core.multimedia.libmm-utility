@@ -75,11 +75,10 @@ int main(int argc, char *argv[])
 	unsigned char rgb_r, rgb_g, rgb_b;
 	ret = mm_util_cv_extract_representative_color(img_buffer, width, height, &rgb_r, &rgb_g, &rgb_b);
 
-	if (!ret) {
+	if (!ret)
 		fprintf(stderr, "Success - R[%d], G[%d], B[%d]", rgb_r, rgb_g, rgb_b);
-	} else {
+	else
 		fprintf(stderr, "Error - fail to extract color");
-	}
 
 	free(img_buffer);
 	img_buffer = NULL;

@@ -88,7 +88,6 @@ AC_CONFIG_FILES([Makefile
 		 bmp/Makefile
 		 bmp/test/Makefile
 		 bmp/mmutil-bmp.pc
-		 test/Makefile
 ])
 
 AC_OUTPUT

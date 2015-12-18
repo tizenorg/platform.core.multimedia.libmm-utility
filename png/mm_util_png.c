@@ -78,7 +78,7 @@ static void user_warning_fn(png_structp png_ptr, png_const_charp warning_msg)
 	mm_util_error("%s", warning_msg);
 }
 
-static void dec_set_prop(mm_util_png_data * decoded, png_structp png_ptr, png_infop info)
+static void dec_set_prop(mm_util_png_data *decoded, png_structp png_ptr, png_infop info)
 {
 	png_color_16 my_background, *image_background;
 
@@ -139,7 +139,7 @@ static void read_function(png_structp png_ptr, png_bytep data, png_size_t size)
 	}
 }
 
-int read_png(mm_util_png_data * decoded, FILE * fp, void *memory)
+int read_png(mm_util_png_data *decoded, FILE * fp, void *memory)
 {
 	png_structp png_ptr;
 	png_infop info_ptr;
@@ -196,9 +196,8 @@ int read_png(mm_util_png_data * decoded, FILE * fp, void *memory)
 	{
 		png_bytep row_pointers[decoded->height];
 
-		for (row_index = 0; row_index < decoded->height; row_index++) {
+		for (row_index = 0; row_index < decoded->height; row_index++)
 			row_pointers[row_index] = png_malloc(png_ptr, png_get_rowbytes(png_ptr, info_ptr));
-		}
 
 		png_read_image(png_ptr, row_pointers);
 
@@ -245,7 +244,7 @@ static void user_end_callback(png_structp png_ptr, png_infop info)
 	mm_util_debug("and we are done reading this image");
 }
 
-int read_png_progressive(mm_util_png_data * decoded, FILE * fp, void **memory, unsigned long long src_size)
+int read_png_progressive(mm_util_png_data *decoded, FILE * fp, void **memory, unsigned long long src_size)
 {
 	png_structp png_ptr;
 	png_infop info_ptr;
@@ -319,7 +318,7 @@ int read_png_progressive(mm_util_png_data * decoded, FILE * fp, void **memory, u
 	return MM_UTIL_ERROR_NONE;
 }
 
-int mm_util_decode_from_png_file(mm_util_png_data * decoded, const char *fpath)
+int mm_util_decode_from_png_file(mm_util_png_data *decoded, const char *fpath)
 {
 	int ret = MM_UTIL_ERROR_NONE;
 	FILE *fp;
@@ -338,7 +337,7 @@ int mm_util_decode_from_png_file(mm_util_png_data * decoded, const char *fpath)
 	return ret;
 }
 
-int mm_util_decode_from_png_memory(mm_util_png_data * decoded, void **memory, unsigned long long src_size)
+int mm_util_decode_from_png_memory(mm_util_png_data *decoded, void **memory, unsigned long long src_size)
 {
 	int ret = MM_UTIL_ERROR_NONE;
 
@@ -351,7 +350,7 @@ int mm_util_decode_from_png_memory(mm_util_png_data * decoded, void **memory, un
 	return ret;
 }
 
-void mm_util_init_decode_png(mm_util_png_data * data)
+void mm_util_init_decode_png(mm_util_png_data *data)
 {
 	mm_util_debug("mm_util_init_decode_png");
 	data->png.progressive = 0;
@@ -359,37 +358,37 @@ void mm_util_init_decode_png(mm_util_png_data * data)
 	data->png.transform = MM_UTIL_PNG_TRANSFORM_IDENTITY;
 }
 
-void mm_util_png_decode_set_progressive(mm_util_png_data * data, int progressive)
+void mm_util_png_decode_set_progressive(mm_util_png_data *data, int progressive)
 {
 	data->png.progressive = progressive;
 }
 
-void mm_util_png_decode_set_progressive_bytes(mm_util_png_data * data, int progressive_bytes)
+void mm_util_png_decode_set_progressive_bytes(mm_util_png_data *data, int progressive_bytes)
 {
 	data->png.progressive_bytes = progressive_bytes;
 }
 
-void mm_util_png_decode_set_transform(mm_util_png_data * data, int transform)
+void mm_util_png_decode_set_transform(mm_util_png_data *data, int transform)
 {
 	data->png.transform = transform;
 }
 
-png_uint_32 mm_util_png_decode_get_width(mm_util_png_data * data)
+png_uint_32 mm_util_png_decode_get_width(mm_util_png_data *data)
 {
 	return data->width;
 }
 
-png_uint_32 mm_util_png_decode_get_height(mm_util_png_data * data)
+png_uint_32 mm_util_png_decode_get_height(mm_util_png_data *data)
 {
 	return data->height;
 }
 
-int mm_util_png_decode_get_bit_depth(mm_util_png_data * data)
+int mm_util_png_decode_get_bit_depth(mm_util_png_data *data)
 {
 	return data->png.bit_depth;
 }
 
-png_uint_32 mm_util_png_decode_get_size(mm_util_png_data * data)
+png_uint_32 mm_util_png_decode_get_size(mm_util_png_data *data)
 {
 	return data->size;
 }
@@ -410,7 +409,7 @@ static void user_write_data(png_structp png_ptr, png_bytep data, png_uint_32 len
 	}
 }
 
-int write_png(void **data, mm_util_png_data * encoded, FILE * fp)
+int write_png(void **data, mm_util_png_data *encoded, FILE *fp)
 {
 	png_structp png_ptr;
 	png_infop info_ptr;
@@ -488,7 +487,7 @@ int write_png(void **data, mm_util_png_data * encoded, FILE * fp)
 	return MM_UTIL_ERROR_NONE;
 }
 
-int mm_util_encode_to_png_file(void **data, mm_util_png_data * encoded, const char *fpath)
+int mm_util_encode_to_png_file(void **data, mm_util_png_data *encoded, const char *fpath)
 {
 	int ret = MM_UTIL_ERROR_NONE;
 	FILE *fp;
@@ -502,7 +501,7 @@ int mm_util_encode_to_png_file(void **data, mm_util_png_data * encoded, const ch
 	return ret;
 }
 
-int mm_util_encode_to_png_memory(void **data, mm_util_png_data * encoded)
+int mm_util_encode_to_png_memory(void **data, mm_util_png_data *encoded)
 {
 	int ret;
 
@@ -512,7 +511,7 @@ int mm_util_encode_to_png_memory(void **data, mm_util_png_data * encoded)
 	return ret;
 }
 
-void mm_util_init_encode_png(mm_util_png_data * data)
+void mm_util_init_encode_png(mm_util_png_data *data)
 {
 	mm_util_debug("mm_util_init_encode_png");
 	data->png.compression_level = MM_UTIL_COMPRESSION_6;
@@ -523,42 +522,42 @@ void mm_util_init_encode_png(mm_util_png_data * data)
 	data->png.bit_depth = MM_UTIL_BIT_DEPTH_8;
 }
 
-void mm_util_png_encode_set_compression_level(mm_util_png_data * data, mm_util_png_compression compression_level)
+void mm_util_png_encode_set_compression_level(mm_util_png_data *data, mm_util_png_compression compression_level)
 {
 	data->png.compression_level = compression_level;
 }
 
-void mm_util_png_encode_set_filter(mm_util_png_data * data, mm_util_png_filter filter)
+void mm_util_png_encode_set_filter(mm_util_png_data *data, mm_util_png_filter filter)
 {
 	data->png.filter = filter;
 }
 
-void mm_util_png_encode_set_color_type(mm_util_png_data * data, mm_util_png_color_type color_type)
+void mm_util_png_encode_set_color_type(mm_util_png_data *data, mm_util_png_color_type color_type)
 {
 	data->png.color_type = color_type;
 }
 
-void mm_util_png_encode_set_filter_type(mm_util_png_data * data, mm_util_png_filter_type filter_type)
+void mm_util_png_encode_set_filter_type(mm_util_png_data *data, mm_util_png_filter_type filter_type)
 {
 	data->png.filter_type = filter_type;
 }
 
-void mm_util_png_encode_set_interlace_type(mm_util_png_data * data, mm_util_png_interlace_type interlace_type)
+void mm_util_png_encode_set_interlace_type(mm_util_png_data *data, mm_util_png_interlace_type interlace_type)
 {
 	data->png.interlace_type = interlace_type;
 }
 
-void mm_util_png_encode_set_width(mm_util_png_data * data, png_uint_32 width)
+void mm_util_png_encode_set_width(mm_util_png_data *data, png_uint_32 width)
 {
 	data->width = width;
 }
 
-void mm_util_png_encode_set_height(mm_util_png_data * data, png_uint_32 height)
+void mm_util_png_encode_set_height(mm_util_png_data *data, png_uint_32 height)
 {
 	data->height = height;
 }
 
-void mm_util_png_encode_set_bit_depth(mm_util_png_data * data, mm_util_png_bit_depth bit_depth)
+void mm_util_png_encode_set_bit_depth(mm_util_png_data *data, mm_util_png_bit_depth bit_depth)
 {
 	data->png.bit_depth = bit_depth;
 }

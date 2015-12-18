@@ -45,7 +45,7 @@ typedef struct {
 	unsigned long long size;
 } write_data;
 
-static int convert_gif_to_rgba(mm_util_gif_data * decoded, ColorMapObject * color_map, GifRowType * screen_buffer, unsigned long width, unsigned long height)
+static int convert_gif_to_rgba(mm_util_gif_data *decoded, ColorMapObject *color_map, GifRowType *screen_buffer, unsigned long width, unsigned long height)
 {
 	unsigned long i, j;
 	GifRowType gif_row;
@@ -78,7 +78,7 @@ static int convert_gif_to_rgba(mm_util_gif_data * decoded, ColorMapObject * colo
 	return MM_UTIL_ERROR_NONE;
 }
 
-static int read_function(GifFileType * gft, GifByteType * data, int size)
+static int read_function(GifFileType *gft, GifByteType *data, int size)
 {
 	read_data *read_data_ptr = (read_data *) gft->UserData;
 
@@ -89,7 +89,7 @@ static int read_function(GifFileType * gft, GifByteType * data, int size)
 	return size;
 }
 
-int read_gif(mm_util_gif_data * decoded, const char *filename, void *memory)
+int read_gif(mm_util_gif_data *decoded, const char *filename, void *memory)
 {
 	int ExtCode, i, j, Row, Col, Width, Height;
 	unsigned long Size;
@@ -251,7 +251,7 @@ error:
 	return ret;
 }
 
-int mm_util_decode_from_gif_file(mm_util_gif_data * decoded, const char *fpath)
+int mm_util_decode_from_gif_file(mm_util_gif_data *decoded, const char *fpath)
 {
 	int ret;
 
@@ -262,7 +262,7 @@ int mm_util_decode_from_gif_file(mm_util_gif_data * decoded, const char *fpath)
 	return ret;
 }
 
-int mm_util_decode_from_gif_memory(mm_util_gif_data * decoded, void **memory)
+int mm_util_decode_from_gif_memory(mm_util_gif_data *decoded, void **memory)
 {
 	int ret;
 
@@ -273,22 +273,22 @@ int mm_util_decode_from_gif_memory(mm_util_gif_data * decoded, void **memory)
 	return ret;
 }
 
-unsigned long mm_util_decode_get_width(mm_util_gif_data * data)
+unsigned long mm_util_decode_get_width(mm_util_gif_data *data)
 {
 	return data->width;
 }
 
-unsigned long mm_util_decode_get_height(mm_util_gif_data * data)
+unsigned long mm_util_decode_get_height(mm_util_gif_data *data)
 {
 	return data->height;
 }
 
-unsigned long long mm_util_decode_get_size(mm_util_gif_data * data)
+unsigned long long mm_util_decode_get_size(mm_util_gif_data *data)
 {
 	return data->size;
 }
 
-static void load_rgb_from_buffer(GifByteType * buffer, GifByteType ** red, GifByteType ** green, GifByteType ** blue, unsigned long width, unsigned long height)
+static void load_rgb_from_buffer(GifByteType *buffer, GifByteType **red, GifByteType **green, GifByteType **blue, unsigned long width, unsigned long height)
 {
 	unsigned long i, j;
 	unsigned long Size;
@@ -317,7 +317,7 @@ static void load_rgb_from_buffer(GifByteType * buffer, GifByteType ** red, GifBy
 	return;
 }
 
-static int save_buffer_to_gif(GifFileType * GifFile, GifByteType * OutputBuffer, unsigned long width, unsigned long height, unsigned long long delay_time)
+static int save_buffer_to_gif(GifFileType *GifFile, GifByteType *OutputBuffer, unsigned long width, unsigned long height, unsigned long long delay_time)
 {
 	unsigned long i;
 	GifByteType *Ptr = OutputBuffer;
@@ -351,7 +351,7 @@ static int save_buffer_to_gif(GifFileType * GifFile, GifByteType * OutputBuffer,
 	return MM_UTIL_ERROR_NONE;
 }
 
-static void outputbuffer_free(GifByteType ** OutputBuffer, unsigned int image_count)
+static void outputbuffer_free(GifByteType **OutputBuffer, unsigned int image_count)
 {
 	unsigned int j;
 
@@ -364,7 +364,7 @@ static void outputbuffer_free(GifByteType ** OutputBuffer, unsigned int image_co
 	free(OutputBuffer);
 }
 
-static int write_function(GifFileType * gft, const GifByteType * data, int size)
+static int write_function(GifFileType *gft, const GifByteType *data, int size)
 {
 	write_data *write_data_ptr = (write_data *) gft->UserData;
 
@@ -376,7 +376,7 @@ static int write_function(GifFileType * gft, const GifByteType * data, int size)
 	return size;
 }
 
-int write_gif(mm_util_gif_data * encoded, const char *filename, void **data)
+int write_gif(mm_util_gif_data *encoded, const char *filename, void **data)
 {
 	int ColorMapSize;
 	unsigned int i = 0;
@@ -490,7 +490,7 @@ int write_gif(mm_util_gif_data * encoded, const char *filename, void **data)
 	return MM_UTIL_ERROR_NONE;
 }
 
-int mm_util_encode_gif_to_file(mm_util_gif_data * encoded, const char *fpath)
+int mm_util_encode_gif_to_file(mm_util_gif_data *encoded, const char *fpath)
 {
 	int ret;
 
@@ -501,7 +501,7 @@ int mm_util_encode_gif_to_file(mm_util_gif_data * encoded, const char *fpath)
 	return ret;
 }
 
-int mm_util_encode_gif_to_memory(mm_util_gif_data * encoded, void **data)
+int mm_util_encode_gif_to_memory(mm_util_gif_data *encoded, void **data)
 {
 	int ret;
 
@@ -511,22 +511,22 @@ int mm_util_encode_gif_to_memory(mm_util_gif_data * encoded, void **data)
 	return ret;
 }
 
-void mm_util_gif_encode_set_width(mm_util_gif_data * data, unsigned long width)
+void mm_util_gif_encode_set_width(mm_util_gif_data *data, unsigned long width)
 {
 	data->width = width;
 }
 
-void mm_util_gif_encode_set_height(mm_util_gif_data * data, unsigned long height)
+void mm_util_gif_encode_set_height(mm_util_gif_data *data, unsigned long height)
 {
 	data->height = height;
 }
 
-void mm_util_gif_encode_set_image_count(mm_util_gif_data * data, unsigned int image_count)
+void mm_util_gif_encode_set_image_count(mm_util_gif_data *data, unsigned int image_count)
 {
 	data->image_count = image_count;
 }
 
-void mm_util_gif_encode_set_frame_delay_time(mm_util_gif_frame_data * frame, unsigned long long delay_time)
+void mm_util_gif_encode_set_frame_delay_time(mm_util_gif_frame_data *frame, unsigned long long delay_time)
 {
 	frame->delay_time = delay_time;
 }

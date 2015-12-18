@@ -29,10 +29,10 @@
 #include <ttrace.h>
 #define TTRACE_BEGIN(NAME) traceBegin(TTRACE_TAG_IMAGE, NAME)
 #define TTRACE_END() traceEnd(TTRACE_TAG_IMAGE)
-#else //ENABLE_TTRACE
+#else /* ENABLE_TTRACE */
 #define TTRACE_BEGIN(NAME)
 #define TTRACE_END()
-#endif //ENABLE_TTRACE
+#endif /* ENABLE_TTRACE */
 
 #define RGB_COLOR_CHANNELS 3
 #define HSV_COLOR_CHANNELS 3
@@ -54,9 +54,8 @@ static int _mm_util_imgcv_init(mm_util_imgcv_s *handle, int width, int height)
 	handle->height = height;
 
 	handle->inImg = cvCreateImageHeader(cvSize(width, height), IPL_DEPTH_8U, RGB_COLOR_CHANNELS);
-	if (handle->inImg == NULL) {
+	if (handle->inImg == NULL)
 		return MM_UTIL_ERROR_INVALID_OPERATION;
-	}
 
 	handle->hBins = DEFAULT_NUM_HBINS;
 	handle->sBins = DEFAULT_NUM_SBINS;
@@ -99,9 +98,8 @@ static int _mm_util_imgcv_set_buffer(mm_util_imgcv_s *handle, void *image_buffer
 	mm_util_debug("image_buffer [%p], width [%d]", buffer, handle->width);
 
 	cvSetData(handle->inImg, buffer, RGB_COLOR_CHANNELS*(handle->width));
-	if (handle->inImg == NULL) {
+	if (handle->inImg == NULL)
 		return	MM_UTIL_ERROR_INVALID_OPERATION;
-	}
 
 	mm_util_debug("Leave _mm_util_imgcv_set_buffer");
 
@@ -164,14 +162,13 @@ static int _mm_util_imgcv_calculate_hist(mm_util_imgcv_s *handle, unsigned char 
 	cvCvtColor(handle->inImg, hsvImg, CV_RGB2HSV);
 	cvSplit(hsvImg, hImg, sImg, vImg, NULL);
 
-	float * ranges[] = {handle->hRanges, handle->sRanges, handle->vRanges};
+	float *ranges[] = {handle->hRanges, handle->sRanges, handle->vRanges};
 	int histsize[] = {handle->sizeOfHist[0], handle->sizeOfHist[1], handle->sizeOfHist[2]};
 
 	/* create histogram*/
 	CvHistogram *hist = cvCreateHist(HISTOGRAM_CHANNELS, histsize, CV_HIST_ARRAY, ranges, 1);
-	if (hist == NULL) {
+	if (hist == NULL)
 		return MM_UTIL_ERROR_INVALID_OPERATION;
-	}
 
 	cvCalcHist(planes, hist, 0, NULL);
 

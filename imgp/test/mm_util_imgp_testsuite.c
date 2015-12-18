@@ -95,7 +95,7 @@ media_format_mimetype_e _format_to_mime(mm_util_img_format colorspace)
 	return mimetype;
 }
 
-int _packet_finalize_callback(media_packet_h packet, int err, void* user_data)
+int _packet_finalize_callback(media_packet_h packet, int err, void *user_data)
 {
 	mm_util_debug("==> finalize callback func is called [%d] \n", err);
 	return MEDIA_PACKET_FINALIZE;
@@ -149,16 +149,16 @@ int main(int argc, char *argv[])
 	void *src;
 	unsigned char *dst = NULL;
 
-	if (argc < 9) {
+	if (argc < 12) {
 		fprintf(stderr, "Usage: mm_util_imgp_testsuite sync {filename} {command} src_width src_height src_foramt dst_width dst_height dst_format roation crop_start_x crop_start_y \n");
 		fprintf(stderr, "Usage: mm_util_imgp_testsuite async {filename} {command} src_width src_height src_foramt dst_width dst_height dst_format roation crop_start_x crop_start_y \n");
-		fprintf(stderr, "ex: mm_util_imgp_testsuite s test.rgb resize 1920 1080 7 1280 720 7 0 0 0 \n");
+		fprintf(stderr, "ex: mm_util_imgp_testsuite sync test.rgb resize 1920 1080 7 1280 720 7 0 0 0 \n");
 		return ret;
 	}
 
 	uint64_t src_size = 0;
 	uint64_t dst_size = 0;
-	bool sync_mode = (strcmp(argv[1], "sync") == 0)?TRUE:FALSE;
+	bool sync_mode = (strcmp(argv[1], "sync") == 0) ? TRUE : FALSE;
 	char *command = NULL;
 	unsigned int src_width = atoi(argv[4]);
 	unsigned int src_height = atoi(argv[5]);
@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
 
 	mm_util_debug("command: %s src_width: %d, src_height: %d, src_format: %d, dst_width: %d, dst_height: %d, dst_format:%d, rotation:%d", command, src_width, src_height, src_format, dst_width, dst_height, dst_format, rotation);
 
-	// mem allocation for src dst buffer
+	/* mem allocation for src dst buffer */
 	mm_util_get_image_size(src_format, src_width, src_height, &size);
 	src_size = (uint64_t)size;
 	mm_util_get_image_size(dst_format, dst_width, dst_height, &size);
@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
 	src = malloc(src_size);
 	dst = malloc(dst_size);
 
-	{ // read input file
+	{ /* read input file */
 		FILE *fp = fopen(argv[2], "r");
 		if (fp == NULL) {
 			mm_util_debug("\tfile open failed %d\n", errno);
@@ -204,11 +204,10 @@ int main(int argc, char *argv[])
 			goto TEST_FAIL;
 		}
 
-		if(fread(src, 1, (int)src_size, fp)) {
+		if (fread(src, 1, (int)src_size, fp))
 			mm_util_debug("#Success# fread");
-		} else {
+		else
 			mm_util_error("#Error# fread");
-		}
 
 		if (src == NULL || src_size <= 0) {
 			mm_util_error("#Error# fread");
@@ -217,41 +216,40 @@ int main(int argc, char *argv[])
 
 	}
 
-	{  // ready output file
-		char *output_fmt = (char*)malloc(sizeof(char) * IMAGE_FORMAT_LABEL_BUFFER_SIZE);
+	{  /* ready output file */
+		char *output_fmt = (char *) g_malloc(sizeof(char) * IMAGE_FORMAT_LABEL_BUFFER_SIZE);
 		memset(output_fmt, 0, IMAGE_FORMAT_LABEL_BUFFER_SIZE);
-		if(dst_format == MM_UTIL_IMG_FMT_YUV420 ||
+		if (dst_format == MM_UTIL_IMG_FMT_YUV420 ||
 			dst_format == MM_UTIL_IMG_FMT_YUV422 ||
 			dst_format == MM_UTIL_IMG_FMT_I420) {
 			strncpy(output_fmt, "yuv", strlen("yuv"));
 		} else {
-			strncpy(output_fmt,"rgb", strlen("rgb"));
+			strncpy(output_fmt, "rgb", strlen("rgb"));
 		}
 		snprintf(output_file, 40, "result_%s_%dx%d.%s", command, dst_width, dst_height, output_fmt);
 	}
 
 	if (sync_mode) {
 		mm_util_debug("SYNC");
-		if (strcmp(command, "convert") == 0) {
+		if (strcmp(command, "convert") == 0)
 			ret = mm_util_convert_colorspace(src, src_width, src_height, src_format, dst, dst_format);
-		} else if (strcmp(command, "resize") == 0) {
+		else if (strcmp(command, "resize") == 0)
 			ret = mm_util_resize_image(src, src_width, src_height, src_format, dst, &dst_width, &dst_height);
-		} else if (strcmp(command, "rotate") == 0) {
+		else if (strcmp(command, "rotate") == 0)
 			ret = mm_util_rotate_image(src, src_width, src_height, src_format, dst, &dst_width, &dst_height, rotation);
-		} else if (strcmp(command, "crop") == 0) {
+		else if (strcmp(command, "crop") == 0)
 			ret = mm_util_crop_image(src, src_width, src_height, src_format, start_x, start_y, &dst_width, &dst_height, dst);
-		}
 
-		if(ret == MM_UTIL_ERROR_NONE) {
+		if (ret == MM_UTIL_ERROR_NONE) {
 			mm_util_debug("Success - %s", command);
 		} else {
 			mm_util_debug("ERROR - %s", command);
 			goto TEST_FAIL;
 		}
 
-		{  // write output file
+		{  /* write output file */
 			FILE *fpout = fopen(output_file, "w");
-			if(fpout) {
+			if (fpout) {
 				mm_util_debug("dst: %p [%d]", dst, dst_size);
 				fwrite(dst, 1, dst_size, fpout);
 				mm_util_debug("FREE");
