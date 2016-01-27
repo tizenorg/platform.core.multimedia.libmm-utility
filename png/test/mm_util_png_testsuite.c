@@ -138,16 +138,20 @@ int main(int argc, char *argv[])
 	if (!strcmp("decode", argv[1])) {
 		mm_util_init_decode_png(&decoded_data);
 		if (argv[3]) {
+#if 0
 			mm_util_png_decode_set_progressive(&decoded_data, atoi(argv[3]));
 			mm_util_png_decode_set_progressive_bytes(&decoded_data, 10000);
+#endif
 		}
 		ret = mm_util_decode_from_png_file(&decoded_data, argv[2]);
 	} else if (!strcmp("decode-mem", argv[1])) {
 		if (_read_file(argv[2], &src, &src_size)) {
 			mm_util_init_decode_png(&decoded_data);
 			if (argv[3]) {
+#if 0
 				mm_util_png_decode_set_progressive(&decoded_data, atoi(argv[3]));
 				mm_util_png_decode_set_progressive_bytes(&decoded_data, 10000);
+#endif
 			}
 			ret = mm_util_decode_from_png_memory(&decoded_data, &src, src_size);
 

@@ -146,6 +146,7 @@ typedef struct {
 	void *data;				/**< data */
 } mm_util_png_data;
 
+#if 0
 /**
  * This function checks if the given file is a png file.
  *
@@ -156,7 +157,7 @@ typedef struct {
  * @since                   R1, 1.0
  */
 bool mm_util_check_if_png(const char *fpath);
-
+#endif
 /**
  * This function extracts raw data from png file
  *
@@ -196,6 +197,7 @@ int mm_util_decode_from_png_memory(mm_util_png_data * decoded, void **memory, un
  */
 void mm_util_init_decode_png(mm_util_png_data * data);
 
+#if 0
 /**
  * This function sets if the decoding should be done progressively.
  * This function should be called after mm_util_init_decode_png.
@@ -282,6 +284,7 @@ int mm_util_png_decode_get_bit_depth(mm_util_png_data * data);
  * @since                     R1, 1.0
  */
 png_uint_32 mm_util_png_decode_get_size(mm_util_png_data * data);
+#endif
 
 /**
  * This function extracts raw data to png file

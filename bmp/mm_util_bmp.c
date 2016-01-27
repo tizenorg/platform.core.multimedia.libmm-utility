@@ -38,12 +38,12 @@
 
 #define BYTES_PER_PIXEL 4
 
-void *bitmap_create(int width, int height, unsigned int state);
-unsigned char *bitmap_get_buffer(void *bitmap);
-size_t bitmap_get_bpp(void *bitmap);
-void bitmap_destroy(void *bitmap);
+void *__bitmap_create(int width, int height, unsigned int state);
+unsigned char *__bitmap_get_buffer(void *bitmap);
+size_t __bitmap_get_bpp(void *bitmap);
+void __bitmap_destroy(void *bitmap);
 
-unsigned char *load_file(const char *path, size_t * data_size)
+static unsigned char *__load_file(const char *path, size_t * data_size)
 {
 	FILE *fd;
 	struct stat sb;
@@ -84,7 +84,7 @@ unsigned char *load_file(const char *path, size_t * data_size)
 	return buffer;
 }
 
-void print_error(const char *context, bmp_result code)
+static void __print_error(const char *context, bmp_result code)
 {
 	switch (code) {
 	case BMP_INSUFFICIENT_MEMORY:
@@ -102,33 +102,33 @@ void print_error(const char *context, bmp_result code)
 	}
 }
 
-void *bitmap_create(int width, int height, unsigned int state)
+void *__bitmap_create(int width, int height, unsigned int state)
 {
 	return calloc(width * height, BYTES_PER_PIXEL);
 }
 
-unsigned char *bitmap_get_buffer(void *bitmap)
+unsigned char *__bitmap_get_buffer(void *bitmap)
 {
 	return bitmap;
 }
 
-size_t bitmap_get_bpp(void *bitmap)
+size_t __bitmap_get_bpp(void *bitmap)
 {
 	return BYTES_PER_PIXEL;
 }
 
-void bitmap_destroy(void *bitmap)
+void __bitmap_destroy(void *bitmap)
 {
 	free(bitmap);
 }
 
-static int read_bmp(mm_util_bmp_data *decoded, const char *filename, void *memory, unsigned long long src_size)
+static int __read_bmp(mm_util_bmp_data *decoded, const char *filename, void *memory, unsigned long long src_size)
 {
 	bmp_bitmap_callback_vt bitmap_callbacks = {
-		bitmap_create,
-		bitmap_destroy,
-		bitmap_get_buffer,
-		bitmap_get_bpp
+		__bitmap_create,
+		__bitmap_destroy,
+		__bitmap_get_buffer,
+		__bitmap_get_bpp
 	};
 	bmp_result code;
 	bmp_image bmp;
@@ -137,7 +137,7 @@ static int read_bmp(mm_util_bmp_data *decoded, const char *filename, void *memor
 	unsigned char *data = NULL;
 
 	if (filename) {
-		data = load_file(filename, &size);
+		data = __load_file(filename, &size);
 		if (data == NULL)
 			return MM_UTIL_ERROR_INVALID_OPERATION;
 	} else if (memory) {
@@ -152,7 +152,7 @@ static int read_bmp(mm_util_bmp_data *decoded, const char *filename, void *memor
 
 	code = bmp_analyse(&bmp, size, data);
 	if (code != BMP_OK) {
-		print_error("bmp_analyse", code);
+		__print_error("bmp_analyse", code);
 		res = MM_UTIL_ERROR_INVALID_OPERATION;
 		goto cleanup;
 	}
@@ -160,7 +160,7 @@ static int read_bmp(mm_util_bmp_data *decoded, const char *filename, void *memor
 	code = bmp_decode(&bmp);
 
 	if (code != BMP_OK) {
-		print_error("bmp_decode", code);
+		__print_error("bmp_decode", code);
 		/* allow partially decoded images */
 		if (code != BMP_INSUFFICIENT_DATA) {
 			res = MM_UTIL_ERROR_INVALID_OPERATION;
@@ -187,7 +187,7 @@ int mm_util_decode_from_bmp_file(mm_util_bmp_data *decoded, const char *filename
 
 	mm_util_debug("mm_util_decode_from_gif_file");
 
-	ret = read_bmp(decoded, filename, NULL, 0);
+	ret = __read_bmp(decoded, filename, NULL, 0);
 
 	return ret;
 }
@@ -198,11 +198,12 @@ int mm_util_decode_from_bmp_memory(mm_util_bmp_data *decoded, void **memory, uns
 
 	mm_util_debug("mm_util_decode_from_gif_file");
 
-	ret = read_bmp(decoded, NULL, *memory, src_size);
+	ret = __read_bmp(decoded, NULL, *memory, src_size);
 
 	return ret;
 }
 
+#if 0
 unsigned long mm_util_decode_get_width(mm_util_bmp_data *data)
 {
 	return data->width;
@@ -217,6 +218,7 @@ unsigned long long mm_util_decode_get_size(mm_util_bmp_data *data)
 {
 	return data->size;
 }
+#endif
 
 int mm_util_encode_bmp_to_file(mm_util_bmp_data *encoded, const char *filename)
 {

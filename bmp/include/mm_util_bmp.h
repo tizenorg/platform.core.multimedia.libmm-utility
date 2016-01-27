@@ -40,8 +40,7 @@ extern "C" {
 /**
  * format for bmp
  */
-typedef enum
-{
+typedef enum {
 	MM_UTIL_BMP_FMT_RGBA8888,     /**< RGBA8888 format */
 } mm_util_bmp_format;
 
@@ -79,6 +78,7 @@ int mm_util_decode_from_bmp_file(mm_util_bmp_data * decoded, const char *filenam
  */
 int mm_util_decode_from_bmp_memory(mm_util_bmp_data * decoded, void **memory, unsigned long long src_size);
 
+#if 0
 /**
  * This function gets the width of the decoded image.
  * This should be called after the actual decoding.
@@ -114,6 +114,7 @@ unsigned long mm_util_bmp_decode_get_height(mm_util_bmp_data * data);
  * @since                     R1, 1.0
  */
 unsigned long long mm_util_bmp_decode_get_size(mm_util_bmp_data * data);
+#endif
 
 /**
  * This function encodes raw data to bmp file

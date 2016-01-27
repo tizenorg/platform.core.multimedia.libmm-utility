@@ -49,6 +49,7 @@ typedef struct {
 	png_size_t size;
 } read_data;
 
+#if 0
 bool mm_util_check_if_png(const char *fpath)
 {
 	char buf[MM_UTIL_PNG_BYTES_TO_CHECK];
@@ -67,22 +68,23 @@ bool mm_util_check_if_png(const char *fpath)
 	fp = NULL;
 	return png_check_sig((void *)buf, MM_UTIL_PNG_BYTES_TO_CHECK);
 }
+#endif
 
-static void user_error_fn(png_structp png_ptr, png_const_charp error_msg)
+static void __user_error_fn(png_structp png_ptr, png_const_charp error_msg)
 {
 	mm_util_error("%s", error_msg);
 }
 
-static void user_warning_fn(png_structp png_ptr, png_const_charp warning_msg)
+static void __user_warning_fn(png_structp png_ptr, png_const_charp warning_msg)
 {
 	mm_util_error("%s", warning_msg);
 }
 
-static void dec_set_prop(mm_util_png_data *decoded, png_structp png_ptr, png_infop info)
+static void __dec_set_prop(mm_util_png_data *decoded, png_structp png_ptr, png_infop info)
 {
 	png_color_16 my_background, *image_background;
 
-	mm_util_debug("dec_set_prop");
+	mm_util_debug("__dec_set_prop");
 
 	png_read_info(png_ptr, info);
 
@@ -129,7 +131,7 @@ static void dec_set_prop(mm_util_png_data *decoded, png_structp png_ptr, png_inf
 	decoded->size = decoded->height * decoded->png.rowbytes;
 }
 
-static void read_function(png_structp png_ptr, png_bytep data, png_size_t size)
+static void __read_function(png_structp png_ptr, png_bytep data, png_size_t size)
 {
 	read_data *read_data_ptr = (read_data *) png_get_io_ptr(png_ptr);
 
@@ -139,17 +141,17 @@ static void read_function(png_structp png_ptr, png_bytep data, png_size_t size)
 	}
 }
 
-int read_png(mm_util_png_data *decoded, FILE * fp, void *memory)
+static int __read_png(mm_util_png_data *decoded, FILE * fp, void *memory)
 {
 	png_structp png_ptr;
 	png_infop info_ptr;
 	guint row_index;
 	read_data read_data_ptr;
 
-	mm_util_debug("read_png");
+	mm_util_debug("__read_png");
 	decoded->data = NULL;
 
-	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, (png_voidp) NULL, user_error_fn, user_warning_fn);
+	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, (png_voidp) NULL, __user_error_fn, __user_warning_fn);
 
 	if (png_ptr == NULL) {
 		mm_util_error("could not create read struct");
@@ -185,13 +187,13 @@ int read_png(mm_util_png_data *decoded, FILE * fp, void *memory)
 	else if (memory) {
 		read_data_ptr.mem = memory;
 		read_data_ptr.size = 0;
-		png_set_read_fn(png_ptr, &read_data_ptr, read_function);
+		png_set_read_fn(png_ptr, &read_data_ptr, __read_function);
 	} else {
 		png_destroy_read_struct(&png_ptr, &info_ptr, png_infopp_NULL);
 		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
-	dec_set_prop(decoded, png_ptr, info_ptr);
+	__dec_set_prop(decoded, png_ptr, info_ptr);
 
 	{
 		png_bytep row_pointers[decoded->height];
@@ -222,7 +224,7 @@ static void user_info_callback(png_structp png_ptr, png_infop info)
 	mm_util_png_data *decoded = (mm_util_png_data *) png_get_io_ptr(png_ptr);
 
 	mm_util_debug("user_info_callback");
-	dec_set_prop(decoded, png_ptr, info);
+	__dec_set_prop(decoded, png_ptr, info);
 
 	/* Allocate output buffer */
 	decoded->data = (void *)png_malloc(png_ptr, sizeof(png_bytep) * decoded->size);
@@ -244,16 +246,16 @@ static void user_end_callback(png_structp png_ptr, png_infop info)
 	mm_util_debug("and we are done reading this image");
 }
 
-int read_png_progressive(mm_util_png_data *decoded, FILE * fp, void **memory, unsigned long long src_size)
+static int __read_png_progressive(mm_util_png_data *decoded, FILE * fp, void **memory, unsigned long long src_size)
 {
 	png_structp png_ptr;
 	png_infop info_ptr;
 	static unsigned long long old_length = 0;
 
-	mm_util_debug("read_png_progressive");
+	mm_util_debug("__read_png_progressive");
 	decoded->data = NULL;
 
-	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, (png_voidp) NULL, user_error_fn, user_warning_fn);
+	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, (png_voidp) NULL, __user_error_fn, __user_warning_fn);
 
 	if (png_ptr == NULL) {
 		mm_util_error("could not create read struct");
@@ -329,9 +331,9 @@ int mm_util_decode_from_png_file(mm_util_png_data *decoded, const char *fpath)
 
 	if (fp) {
 		if (decoded->png.progressive)
-			ret = read_png_progressive(decoded, fp, NULL, 0);
+			ret = __read_png_progressive(decoded, fp, NULL, 0);
 		else
-			ret = read_png(decoded, fp, NULL);
+			ret = __read_png(decoded, fp, NULL);
 	}
 
 	return ret;
@@ -343,9 +345,9 @@ int mm_util_decode_from_png_memory(mm_util_png_data *decoded, void **memory, uns
 
 	mm_util_debug("mm_util_decode_from_memory");
 	if (decoded->png.progressive)
-		ret = read_png_progressive(decoded, NULL, memory, src_size);
+		ret = __read_png_progressive(decoded, NULL, memory, src_size);
 	else
-		ret = read_png(decoded, NULL, *memory);
+		ret = __read_png(decoded, NULL, *memory);
 
 	return ret;
 }
@@ -358,6 +360,7 @@ void mm_util_init_decode_png(mm_util_png_data *data)
 	data->png.transform = MM_UTIL_PNG_TRANSFORM_IDENTITY;
 }
 
+#if 0
 void mm_util_png_decode_set_progressive(mm_util_png_data *data, int progressive)
 {
 	data->png.progressive = progressive;
@@ -392,7 +395,7 @@ png_uint_32 mm_util_png_decode_get_size(mm_util_png_data *data)
 {
 	return data->size;
 }
-
+#endif
 static void user_flush_data(png_structp png_ptr G_GNUC_UNUSED)
 {
 }
@@ -420,7 +423,7 @@ int write_png(void **data, mm_util_png_data *encoded, FILE *fp)
 	encoded->data = NULL;
 	encoded->size = 0;
 
-	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, (png_voidp) NULL, user_error_fn, user_warning_fn);
+	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, (png_voidp) NULL, __user_error_fn, __user_warning_fn);
 
 	if (png_ptr == NULL) {
 		mm_util_error("could not create write struct");

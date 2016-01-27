@@ -45,14 +45,14 @@ typedef struct {
 	unsigned long long size;
 } write_data;
 
-static int convert_gif_to_rgba(mm_util_gif_data *decoded, ColorMapObject *color_map, GifRowType *screen_buffer, unsigned long width, unsigned long height)
+static int __convert_gif_to_rgba(mm_util_gif_data *decoded, ColorMapObject *color_map, GifRowType *screen_buffer, unsigned long width, unsigned long height)
 {
 	unsigned long i, j;
 	GifRowType gif_row;
 	GifColorType *color_map_entry;
 	GifByteType *buffer;
 
-	mm_util_debug("convert_gif_to_rgba");
+	mm_util_debug("__convert_gif_to_rgba");
 	if ((decoded->frames = (mm_util_gif_frame_data *) malloc(sizeof(mm_util_gif_frame_data)))
 		== NULL) {
 		mm_util_error("Failed to allocate memory required, aborted.");
@@ -78,7 +78,7 @@ static int convert_gif_to_rgba(mm_util_gif_data *decoded, ColorMapObject *color_
 	return MM_UTIL_ERROR_NONE;
 }
 
-static int read_function(GifFileType *gft, GifByteType *data, int size)
+static int __read_function(GifFileType *gft, GifByteType *data, int size)
 {
 	read_data *read_data_ptr = (read_data *) gft->UserData;
 
@@ -89,7 +89,7 @@ static int read_function(GifFileType *gft, GifByteType *data, int size)
 	return size;
 }
 
-int read_gif(mm_util_gif_data *decoded, const char *filename, void *memory)
+static int __read_gif(mm_util_gif_data *decoded, const char *filename, void *memory)
 {
 	int ExtCode, i, j, Row, Col, Width, Height;
 	unsigned long Size;
@@ -110,7 +110,7 @@ int read_gif(mm_util_gif_data *decoded, const char *filename, void *memory)
 	} else if (memory) {
 		read_data_ptr.mem = memory;
 		read_data_ptr.size = 0;
-		if ((GifFile = DGifOpen(&read_data_ptr, read_function)) == NULL) {
+		if ((GifFile = DGifOpen(&read_data_ptr, __read_function)) == NULL) {
 			mm_util_error("could not open Gif File");
 			return MM_UTIL_ERROR_INVALID_OPERATION;
 		}
@@ -231,7 +231,7 @@ int read_gif(mm_util_gif_data *decoded, const char *filename, void *memory)
 		goto error;
 	}
 
-	convert_gif_to_rgba(decoded, ColorMap, screen_buffer, GifFile->SWidth, GifFile->SHeight);
+	__convert_gif_to_rgba(decoded, ColorMap, screen_buffer, GifFile->SWidth, GifFile->SHeight);
 
 	ret = MM_UTIL_ERROR_NONE;
 error:
@@ -257,7 +257,7 @@ int mm_util_decode_from_gif_file(mm_util_gif_data *decoded, const char *fpath)
 
 	mm_util_debug("mm_util_decode_from_gif_file");
 
-	ret = read_gif(decoded, fpath, NULL);
+	ret = __read_gif(decoded, fpath, NULL);
 
 	return ret;
 }
@@ -268,11 +268,12 @@ int mm_util_decode_from_gif_memory(mm_util_gif_data *decoded, void **memory)
 
 	mm_util_debug("mm_util_decode_from_gif_memory");
 
-	ret = read_gif(decoded, NULL, *memory);
+	ret = __read_gif(decoded, NULL, *memory);
 
 	return ret;
 }
 
+#if 0
 unsigned long mm_util_decode_get_width(mm_util_gif_data *data)
 {
 	return data->width;
@@ -287,14 +288,15 @@ unsigned long long mm_util_decode_get_size(mm_util_gif_data *data)
 {
 	return data->size;
 }
+#endif
 
-static void load_rgb_from_buffer(GifByteType *buffer, GifByteType **red, GifByteType **green, GifByteType **blue, unsigned long width, unsigned long height)
+static void __load_rgb_from_buffer(GifByteType *buffer, GifByteType **red, GifByteType **green, GifByteType **blue, unsigned long width, unsigned long height)
 {
 	unsigned long i, j;
 	unsigned long Size;
 	GifByteType *redP, *greenP, *blueP;
 
-	mm_util_debug("load_rgb_from_buffer");
+	mm_util_debug("__load_rgb_from_buffer");
 	Size = ((long)width) * height * sizeof(GifByteType);
 
 	if ((*red = (GifByteType *) malloc((unsigned int)Size)) == NULL || (*green = (GifByteType *) malloc((unsigned int)Size)) == NULL || (*blue = (GifByteType *) malloc((unsigned int)Size)) == NULL) {
@@ -317,13 +319,13 @@ static void load_rgb_from_buffer(GifByteType *buffer, GifByteType **red, GifByte
 	return;
 }
 
-static int save_buffer_to_gif(GifFileType *GifFile, GifByteType *OutputBuffer, unsigned long width, unsigned long height, unsigned long long delay_time)
+static int __save_buffer_to_gif(GifFileType *GifFile, GifByteType *OutputBuffer, unsigned long width, unsigned long height, unsigned long long delay_time)
 {
 	unsigned long i;
 	GifByteType *Ptr = OutputBuffer;
 	static unsigned char extension[4] = { 0x04, 0x00, 0x00, 0xff };
 
-	mm_util_debug("save_buffer_to_gif");
+	mm_util_debug("__save_buffer_to_gif");
 	extension[0] = (false) ? 0x06 : 0x04;
 	extension[1] = delay_time % 256;
 	extension[2] = delay_time / 256;
@@ -351,7 +353,7 @@ static int save_buffer_to_gif(GifFileType *GifFile, GifByteType *OutputBuffer, u
 	return MM_UTIL_ERROR_NONE;
 }
 
-static void outputbuffer_free(GifByteType **OutputBuffer, unsigned int image_count)
+static void __outputbuffer_free(GifByteType **OutputBuffer, unsigned int image_count)
 {
 	unsigned int j;
 
@@ -364,7 +366,7 @@ static void outputbuffer_free(GifByteType **OutputBuffer, unsigned int image_cou
 	free(OutputBuffer);
 }
 
-static int write_function(GifFileType *gft, const GifByteType *data, int size)
+static int __write_function(GifFileType *gft, const GifByteType *data, int size)
 {
 	write_data *write_data_ptr = (write_data *) gft->UserData;
 
@@ -376,7 +378,7 @@ static int write_function(GifFileType *gft, const GifByteType *data, int size)
 	return size;
 }
 
-int write_gif(mm_util_gif_data *encoded, const char *filename, void **data)
+static int __write_gif(mm_util_gif_data *encoded, const char *filename, void **data)
 {
 	int ColorMapSize;
 	unsigned int i = 0;
@@ -391,16 +393,16 @@ int write_gif(mm_util_gif_data *encoded, const char *filename, void **data)
 	for (i = 0; i < encoded->image_count; i++) {
 		if ((OutputBuffer[i] = (GifByteType *) malloc(encoded->width * encoded->height * sizeof(GifByteType))) == NULL) {
 			mm_util_error("Failed to allocate memory required, aborted.");
-			outputbuffer_free(OutputBuffer, encoded->image_count);
+			__outputbuffer_free(OutputBuffer, encoded->image_count);
 			return MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 
 		if (i == 0) {
-			load_rgb_from_buffer((GifByteType *) encoded->frames[i].data, &red, &green, &blue, encoded->width, encoded->height);
+			__load_rgb_from_buffer((GifByteType *) encoded->frames[i].data, &red, &green, &blue, encoded->width, encoded->height);
 
 			if ((OutputColorMap = MakeMapObject(ColorMapSize, NULL)) == NULL) {
 				mm_util_error("could not map object");
-				outputbuffer_free(OutputBuffer, encoded->image_count);
+				__outputbuffer_free(OutputBuffer, encoded->image_count);
 				free((char *)red);
 				free((char *)green);
 				free((char *)blue);
@@ -408,7 +410,7 @@ int write_gif(mm_util_gif_data *encoded, const char *filename, void **data)
 			}
 			if (QuantizeBuffer(encoded->width, encoded->height, &ColorMapSize, red, green, blue, OutputBuffer[i], OutputColorMap->Colors) == GIF_ERROR) {
 				mm_util_error("could not quantize buffer");
-				outputbuffer_free(OutputBuffer, encoded->image_count);
+				__outputbuffer_free(OutputBuffer, encoded->image_count);
 				free((char *)red);
 				free((char *)green);
 				free((char *)blue);
@@ -449,16 +451,16 @@ int write_gif(mm_util_gif_data *encoded, const char *filename, void **data)
 	if (filename) {
 		if ((GifFile = EGifOpenFileName(filename, 0)) == NULL) {
 			mm_util_error("could not open file");
-			outputbuffer_free(OutputBuffer, encoded->image_count);
+			__outputbuffer_free(OutputBuffer, encoded->image_count);
 			return MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 	} else {
 		write_data_ptr.mem = data;
 		write_data_ptr.size = 0;
 
-		if ((GifFile = EGifOpen(&write_data_ptr, write_function)) == NULL) {
+		if ((GifFile = EGifOpen(&write_data_ptr, __write_function)) == NULL) {
 			mm_util_error("could not open File");
-			outputbuffer_free(OutputBuffer, encoded->image_count);
+			__outputbuffer_free(OutputBuffer, encoded->image_count);
 			return MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 	}
@@ -467,25 +469,25 @@ int write_gif(mm_util_gif_data *encoded, const char *filename, void **data)
 		mm_util_error("could not put screen description");
 		if (GifFile != NULL)
 			EGifCloseFile(GifFile);
-		outputbuffer_free(OutputBuffer, encoded->image_count);
+		__outputbuffer_free(OutputBuffer, encoded->image_count);
 		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	for (i = 0; i < encoded->image_count; i++) {
-		if (save_buffer_to_gif(GifFile, OutputBuffer[i], encoded->width, encoded->height, encoded->frames[i].delay_time) != MM_UTIL_ERROR_NONE) {
-			outputbuffer_free(OutputBuffer, encoded->image_count);
+		if (__save_buffer_to_gif(GifFile, OutputBuffer[i], encoded->width, encoded->height, encoded->frames[i].delay_time) != MM_UTIL_ERROR_NONE) {
+			__outputbuffer_free(OutputBuffer, encoded->image_count);
 			return MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 	}
 
 	if (EGifCloseFile(GifFile) == GIF_ERROR) {
 		mm_util_error("could not close file");
-		outputbuffer_free(OutputBuffer, encoded->image_count);
+		__outputbuffer_free(OutputBuffer, encoded->image_count);
 		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
 	encoded->size = write_data_ptr.size;
-	outputbuffer_free(OutputBuffer, encoded->image_count);
+	__outputbuffer_free(OutputBuffer, encoded->image_count);
 
 	return MM_UTIL_ERROR_NONE;
 }
@@ -496,7 +498,7 @@ int mm_util_encode_gif_to_file(mm_util_gif_data *encoded, const char *fpath)
 
 	mm_util_debug("mm_util_encode_to_gif");
 
-	ret = write_gif(encoded, fpath, NULL);
+	ret = __write_gif(encoded, fpath, NULL);
 
 	return ret;
 }
@@ -506,7 +508,7 @@ int mm_util_encode_gif_to_memory(mm_util_gif_data *encoded, void **data)
 	int ret;
 
 	mm_util_debug("mm_util_encode_to_memory");
-	ret = write_gif(encoded, NULL, data);
+	ret = __write_gif(encoded, NULL, data);
 
 	return ret;
 }
@@ -525,8 +527,9 @@ void mm_util_gif_encode_set_image_count(mm_util_gif_data *data, unsigned int ima
 {
 	data->image_count = image_count;
 }
-
+#if 0
 void mm_util_gif_encode_set_frame_delay_time(mm_util_gif_frame_data *frame, unsigned long long delay_time)
 {
 	frame->delay_time = delay_time;
 }
+#endif

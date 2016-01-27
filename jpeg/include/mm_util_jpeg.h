@@ -98,8 +98,7 @@ typedef struct
  * @see         mm_util_jpeg_yuv_format
  * @since       R1, 1.0
  */
-int
-mm_util_jpeg_encode_to_file (const char *filename, void *src, int width, int height, mm_util_jpeg_yuv_format fmt, int quality);
+int mm_util_jpeg_encode_to_file (const char *filename, void *src, int width, int height, mm_util_jpeg_yuv_format fmt, int quality);
 
 
 /**
@@ -118,8 +117,7 @@ mm_util_jpeg_encode_to_file (const char *filename, void *src, int width, int hei
  * @see         mm_util_jpeg_yuv_format
  * @since       R1, 1.0
  */
-int
-mm_util_jpeg_encode_to_memory (void **mem, int *size, void *src, int width, int height, mm_util_jpeg_yuv_format fmt, int quality);
+int mm_util_jpeg_encode_to_memory (void **mem, int *size, void *src, int width, int height, mm_util_jpeg_yuv_format fmt, int quality);
 
 
 /**
@@ -134,8 +132,7 @@ mm_util_jpeg_encode_to_memory (void **mem, int *size, void *src, int width, int 
  * @see         mm_util_jpeg_yuv_data, mm_util_jpeg_yuv_format
  * @since       R1, 1.0
  */
-int
-mm_util_decode_from_jpeg_file(mm_util_jpeg_yuv_data *decoded, const char *filename, mm_util_jpeg_yuv_format fmt);
+int mm_util_decode_from_jpeg_file(mm_util_jpeg_yuv_data *decoded, const char *filename, mm_util_jpeg_yuv_format fmt);
 
 
 /**
@@ -151,8 +148,7 @@ mm_util_decode_from_jpeg_file(mm_util_jpeg_yuv_data *decoded, const char *filena
  * @see         mm_util_jpeg_yuv_data, mm_util_jpeg_yuv_format
  * @since       R1, 1.0
  */
-int
-mm_util_decode_from_jpeg_memory (mm_util_jpeg_yuv_data *decoded, void *src, int size, mm_util_jpeg_yuv_format fmt);
+int mm_util_decode_from_jpeg_memory (mm_util_jpeg_yuv_data *decoded, void *src, int size, mm_util_jpeg_yuv_format fmt);
 
 /**
  * This function extracts yuv data from jpeg file with downscale decode option
@@ -167,8 +163,7 @@ mm_util_decode_from_jpeg_memory (mm_util_jpeg_yuv_data *decoded, void *src, int 
  * @see         mm_util_jpeg_yuv_data, mm_util_jpeg_yuv_format
  * @since       R1, 1.0
  */
-int
-mm_util_decode_from_jpeg_file_with_downscale(mm_util_jpeg_yuv_data *decoded, const char *filename, mm_util_jpeg_yuv_format fmt, mm_util_jpeg_decode_downscale downscale);
+int mm_util_decode_from_jpeg_file_with_downscale(mm_util_jpeg_yuv_data *decoded, const char *filename, mm_util_jpeg_yuv_format fmt, mm_util_jpeg_decode_downscale downscale);
 
 /**
  * This function extracts yuv data from jpeg buffer with downscale decode option
@@ -184,8 +179,7 @@ mm_util_decode_from_jpeg_file_with_downscale(mm_util_jpeg_yuv_data *decoded, con
  * @see         mm_util_jpeg_yuv_data, mm_util_jpeg_yuv_format
  * @since       R1, 1.0
  */
-int
-mm_util_decode_from_jpeg_memory_with_downscale (mm_util_jpeg_yuv_data *decoded, void *src, int size, mm_util_jpeg_yuv_format fmt, mm_util_jpeg_decode_downscale downscale);
+int mm_util_decode_from_jpeg_memory_with_downscale (mm_util_jpeg_yuv_data *decoded, void *src, int size, mm_util_jpeg_yuv_format fmt, mm_util_jpeg_decode_downscale downscale);
 
 
 #ifdef __cplusplus

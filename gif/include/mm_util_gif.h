@@ -83,6 +83,7 @@ int mm_util_decode_from_gif_file(mm_util_gif_data * decoded, const char *filenam
  */
 int mm_util_decode_from_gif_memory(mm_util_gif_data * decoded, void **memory);
 
+#if 0
 /**
  * This function gets the width of the decoded image.
  * This should be called after the actual decoding.
@@ -118,6 +119,7 @@ unsigned long mm_util_gif_decode_get_height(mm_util_gif_data * data);
  * @since                     R1, 1.0
  */
 unsigned long long mm_util_gif_decode_get_size(mm_util_gif_data * data);
+#endif
 
 /**
  * This function encodes raw data to gif file
@@ -182,7 +184,7 @@ void mm_util_gif_encode_set_height(mm_util_gif_data * data, unsigned long height
  * @since                             R1, 1.0
  */
 void mm_util_gif_encode_set_image_count(mm_util_gif_data * data, unsigned int image_count);
-
+#if 0
 /**
  * This function sets the time delay after which the particular image of the gif should be displayed.
  *
@@ -194,7 +196,7 @@ void mm_util_gif_encode_set_image_count(mm_util_gif_data * data, unsigned int im
  * @since                             R1, 1.0
  */
 void mm_util_gif_encode_set_frame_delay_time(mm_util_gif_frame_data * frame, unsigned long long delay_time);
-
+#endif
 #ifdef __cplusplus
 }
 #endif

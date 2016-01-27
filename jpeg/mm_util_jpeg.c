@@ -86,7 +86,7 @@
 
 const char *subName[TJ_NUMSAMP] = {"444", "422", "420", "GRAY", "440"};
 
-void initBuf(unsigned char *buf, int w, int h, int pf, int flags)
+static void __initBuf(unsigned char *buf, int w, int h, int pf, int flags)
 {
 	int roffset = tjRedOffset[pf];
 	int goffset = tjGreenOffset[pf];
@@ -124,6 +124,7 @@ void initBuf(unsigned char *buf, int w, int h, int pf, int flags)
 	}
 }
 
+#if 0
 static void mm_image_codec_writeJPEG(unsigned char *jpegBuf, unsigned long jpegSize, char *filename)
 {
 	FILE *file = fopen(filename, "wb");
@@ -134,8 +135,9 @@ static void mm_image_codec_writeJPEG(unsigned char *jpegBuf, unsigned long jpegS
 
 	if (file) fclose(file);
 }
+#endif
 
-static void _mm_decode_libjpeg_turbo_decompress(tjhandle handle, unsigned char *jpegBuf, unsigned long jpegSize, int TD_BU, mm_util_jpeg_yuv_data* decoded_data, mm_util_jpeg_yuv_format input_fmt)
+static void __mm_decode_libjpeg_turbo_decompress(tjhandle handle, unsigned char *jpegBuf, unsigned long jpegSize, int TD_BU, mm_util_jpeg_yuv_data* decoded_data, mm_util_jpeg_yuv_format input_fmt)
 {
 	int _hdrw = 0, _hdrh = 0, _hdrsubsamp = -1;
 	int scaledWidth = 0;
@@ -231,7 +233,7 @@ static void _mm_decode_libjpeg_turbo_decompress(tjhandle handle, unsigned char *
 	}
 }
 
-static int mm_image_decode_from_jpeg_file_with_libjpeg_turbo(mm_util_jpeg_yuv_data *decoded_data, const char *pFileName, mm_util_jpeg_yuv_format input_fmt)
+static int __mm_image_decode_from_jpeg_file_with_libjpeg_turbo(mm_util_jpeg_yuv_data *decoded_data, const char *pFileName, mm_util_jpeg_yuv_format input_fmt)
 {
 	int iErrorCode = MM_UTIL_ERROR_NONE;
 	tjhandle dhandle = NULL;
@@ -264,7 +266,7 @@ static int mm_image_decode_from_jpeg_file_with_libjpeg_turbo(mm_util_jpeg_yuv_da
 
 	fread(srcBuf, 1, jpegSize, src);
 	mm_util_debug("srcBuf[0]: 0x%2x, srcBuf[1]: 0x%2x, jpegSize:%d", srcBuf[0], srcBuf[1], jpegSize);
-	_mm_decode_libjpeg_turbo_decompress(dhandle, srcBuf, jpegSize, TD_BU, decoded_data, input_fmt);
+	__mm_decode_libjpeg_turbo_decompress(dhandle, srcBuf, jpegSize, TD_BU, decoded_data, input_fmt);
 	fclose(src);
 	mm_util_debug("fclose");
 
@@ -276,7 +278,7 @@ static int mm_image_decode_from_jpeg_file_with_libjpeg_turbo(mm_util_jpeg_yuv_da
 	return iErrorCode;
 }
 
-static int mm_image_decode_from_jpeg_memory_with_libjpeg_turbo(mm_util_jpeg_yuv_data *decoded_data, void *src, int size, mm_util_jpeg_yuv_format input_fmt)
+static int __mm_image_decode_from_jpeg_memory_with_libjpeg_turbo(mm_util_jpeg_yuv_data *decoded_data, void *src, int size, mm_util_jpeg_yuv_format input_fmt)
 {
 	int iErrorCode = MM_UTIL_ERROR_NONE;
 	tjhandle dhandle = NULL;
@@ -296,7 +298,7 @@ static int mm_image_decode_from_jpeg_memory_with_libjpeg_turbo(mm_util_jpeg_yuv_
 	}
 
 	mm_util_debug("srcBuf[0]: 0x%2x, srcBuf[1]: 0x%2x, jpegSize:%d", srcBuf[0], srcBuf[1], size);
-	_mm_decode_libjpeg_turbo_decompress(dhandle, src, size, TD_BU, decoded_data, input_fmt);
+	__mm_decode_libjpeg_turbo_decompress(dhandle, src, size, TD_BU, decoded_data, input_fmt);
 
 	if (dhandle)
 		tjDestroy(dhandle);
@@ -320,9 +322,9 @@ static void _mm_encode_libjpeg_turbo_compress(tjhandle handle, void *src, unsign
 	} else {
 		mm_util_debug("srcBuf: 0x%2x", srcBuf);
 		if (fmt == MM_UTIL_JPEG_FMT_RGB888) {
-			initBuf(srcBuf, w, h, TJPF_RGB, flags);
+			__initBuf(srcBuf, w, h, TJPF_RGB, flags);
 		} else if (fmt == MM_UTIL_JPEG_FMT_YUV420 || fmt == MM_UTIL_JPEG_FMT_YUV422) {
-			initBuf(srcBuf, w, h, TJPF_GRAY, flags);
+			__initBuf(srcBuf, w, h, TJPF_GRAY, flags);
 		} else {
 			IMG_JPEG_FREE(srcBuf);
 			mm_util_error("[%s][%05d] We can't support the IMAGE format");
@@ -352,7 +354,7 @@ static void _mm_encode_libjpeg_turbo_compress(tjhandle handle, void *src, unsign
 	IMG_JPEG_FREE(srcBuf);
 }
 
-static int mm_image_encode_to_jpeg_file_with_libjpeg_turbo(char *filename, void* src, int width, int height, mm_util_jpeg_yuv_format fmt, int quality)
+static int __mm_image_encode_to_jpeg_file_with_libjpeg_turbo(char *filename, void* src, int width, int height, mm_util_jpeg_yuv_format fmt, int quality)
 {
 	int iErrorCode = MM_UTIL_ERROR_NONE;
 	tjhandle chandle = NULL;
@@ -392,7 +394,7 @@ static int mm_image_encode_to_jpeg_file_with_libjpeg_turbo(char *filename, void*
 	return iErrorCode;
 }
 
-static int mm_image_encode_to_jpeg_memory_with_libjpeg_turbo(void **mem, int *csize, void *rawdata, int w, int h, mm_util_jpeg_yuv_format fmt, int quality)
+static int __mm_image_encode_to_jpeg_memory_with_libjpeg_turbo(void **mem, int *csize, void *rawdata, int w, int h, mm_util_jpeg_yuv_format fmt, int quality)
 {
 	int iErrorCode = MM_UTIL_ERROR_NONE;
 	tjhandle chandle = NULL;
@@ -460,14 +462,14 @@ struct {
 
 typedef struct my_mem_destination_mgr *my_mem_dest_ptr;
 
-static void my_error_exit(j_common_ptr cinfo)
+static void __my_error_exit(j_common_ptr cinfo)
 {
 	my_error_ptr myerr = (my_error_ptr) cinfo->err; /* cinfo->err really points to a my_error_mgr_s struct, so coerce pointer */
 	(*cinfo->err->output_message) (cinfo); /* Always display the message. We could postpone this until after returning, if we chose. */
 	longjmp(myerr->setjmp_buffer, 1); /* Return control to the setjmp point */
 }
 
-static int mm_image_encode_to_jpeg_file_with_libjpeg(const char *pFileName, void *rawdata, int width, int height, mm_util_jpeg_yuv_format fmt, int quality)
+static int __mm_image_encode_to_jpeg_file_with_libjpeg(const char *pFileName, void *rawdata, int width, int height, mm_util_jpeg_yuv_format fmt, int quality)
 {
 	int iErrorCode = MM_UTIL_ERROR_NONE;
 
@@ -503,7 +505,7 @@ static int mm_image_encode_to_jpeg_file_with_libjpeg(const char *pFileName, void
 	cinfo.image_width = width;
 	cinfo.image_height = height;
 	if (fmt == MM_UTIL_JPEG_FMT_YUV420 || fmt == MM_UTIL_JPEG_FMT_YUV422 || fmt == MM_UTIL_JPEG_FMT_UYVY) {
-		mm_util_debug("[mm_image_encode_to_jpeg_file_with_libjpeg] jpeg_stdio_dest for YUV");
+		mm_util_debug("[__mm_image_encode_to_jpeg_file_with_libjpeg] jpeg_stdio_dest for YUV");
 		mm_util_debug("[Height] %d", height);
 		_height = MM_JPEG_ROUND_DOWN_16(height);
 		flag = height - _height;
@@ -661,7 +663,7 @@ static int mm_image_encode_to_jpeg_file_with_libjpeg(const char *pFileName, void
 	return iErrorCode;
 }
 
-static int mm_image_encode_to_jpeg_memory_with_libjpeg(void **mem, int *csize, void *rawdata, int width, int height, mm_util_jpeg_yuv_format fmt, int quality)
+static int __mm_image_encode_to_jpeg_memory_with_libjpeg(void **mem, int *csize, void *rawdata, int width, int height, mm_util_jpeg_yuv_format fmt, int quality)
 {
 	int iErrorCode = MM_UTIL_ERROR_NONE;
 
@@ -695,14 +697,14 @@ static int mm_image_encode_to_jpeg_memory_with_libjpeg(void **mem, int *csize, v
 
 	jpeg_create_compress(&cinfo);
 
-	mm_util_debug("[mm_image_encode_to_jpeg_memory_with_libjpeg] #After jpeg_mem_dest#, mem: %p\t width: %d\t height: %d\t fmt: %d\t quality: %d"
+	mm_util_debug("[__mm_image_encode_to_jpeg_memory_with_libjpeg] #After jpeg_mem_dest#, mem: %p\t width: %d\t height: %d\t fmt: %d\t quality: %d"
 		, mem, width, height, fmt, quality);
 
 	jpeg_mem_dest(&cinfo, (unsigned char **)mem, &size);
 	cinfo.image_width = width;
 	cinfo.image_height = height;
 	if (fmt == MM_UTIL_JPEG_FMT_YUV420 || fmt == MM_UTIL_JPEG_FMT_YUV422 || fmt == MM_UTIL_JPEG_FMT_UYVY) {
-		mm_util_debug("[mm_image_encode_to_jpeg_file_with_libjpeg] jpeg_stdio_dest for YUV");
+		mm_util_debug("[__mm_image_encode_to_jpeg_file_with_libjpeg] jpeg_stdio_dest for YUV");
 		_height = MM_JPEG_ROUND_DOWN_16(height);
 		flag = height - _height;
 
@@ -856,7 +858,7 @@ static int mm_image_encode_to_jpeg_memory_with_libjpeg(void **mem, int *csize, v
 	return iErrorCode;
 }
 
-static int mm_image_decode_from_jpeg_file_with_libjpeg(mm_util_jpeg_yuv_data *decoded_data, const char *pFileName, mm_util_jpeg_yuv_format input_fmt, mm_util_jpeg_decode_downscale downscale)
+static int __mm_image_decode_from_jpeg_file_with_libjpeg(mm_util_jpeg_yuv_data *decoded_data, const char *pFileName, mm_util_jpeg_yuv_format input_fmt, mm_util_jpeg_decode_downscale downscale)
 {
 	int iErrorCode = MM_UTIL_ERROR_NONE;
 	FILE *infile = NULL;
@@ -890,10 +892,10 @@ static int mm_image_decode_from_jpeg_file_with_libjpeg(mm_util_jpeg_yuv_data *de
 	/* allocate and initialize JPEG decompression object   We set up the normal JPEG error routines, then override error_exit. */
 	dinfo.err = jpeg_std_error(&jerr.pub);
 	mm_util_debug("jpeg_std_error");
-	jerr.pub.error_exit = my_error_exit;
+	jerr.pub.error_exit = __my_error_exit;
 	mm_util_debug("jerr.pub.error_exit ");
 
-	/* Establish the setjmp return context for my_error_exit to use. */
+	/* Establish the setjmp return context for __my_error_exit to use. */
 	if (setjmp(jerr.setjmp_buffer)) {
 		/* If we get here, the JPEG code has signaled an error. We need to clean up the JPEG object, close the input file, and return.*/
 		mm_util_debug("setjmp");
@@ -1046,7 +1048,7 @@ static int mm_image_decode_from_jpeg_file_with_libjpeg(mm_util_jpeg_yuv_data *de
 	return iErrorCode;
 }
 
-static int mm_image_decode_from_jpeg_memory_with_libjpeg(mm_util_jpeg_yuv_data *decoded_data, void *src, int size, mm_util_jpeg_yuv_format input_fmt, mm_util_jpeg_decode_downscale downscale)
+static int __mm_image_decode_from_jpeg_memory_with_libjpeg(mm_util_jpeg_yuv_data *decoded_data, void *src, int size, mm_util_jpeg_yuv_format input_fmt, mm_util_jpeg_decode_downscale downscale)
 {
 	int iErrorCode = MM_UTIL_ERROR_NONE;
 	struct jpeg_decompress_struct dinfo;
@@ -1073,10 +1075,10 @@ static int mm_image_decode_from_jpeg_memory_with_libjpeg(mm_util_jpeg_yuv_data *
 	/* allocate and initialize JPEG decompression object   We set up the normal JPEG error routines, then override error_exit. */
 	dinfo.err = jpeg_std_error(&jerr.pub);
 	mm_util_debug("jpeg_std_error ");
-	jerr.pub.error_exit = my_error_exit;
+	jerr.pub.error_exit = __my_error_exit;
 	mm_util_debug("jerr.pub.error_exit ");
 
-	/* Establish the setjmp return context for my_error_exit to use. */
+	/* Establish the setjmp return context for __my_error_exit to use. */
 	if (setjmp(jerr.setjmp_buffer)) {
 		/* If we get here, the JPEG code has signaled an error.  We need to clean up the JPEG object, close the input file, and return.*/
 		mm_util_debug("setjmp");
@@ -1261,7 +1263,7 @@ EXPORT_API int mm_util_jpeg_encode_to_file(const char *filename, void* src, int 
 
 #if LIBJPEG_TURBO
 	mm_util_debug("#START# LIBJPEG_TURBO");
-	ret = mm_image_encode_to_jpeg_file_with_libjpeg_turbo(filename, src, width, height, fmt, quality);
+	ret = __mm_image_encode_to_jpeg_file_with_libjpeg_turbo(filename, src, width, height, fmt, quality);
 	mm_util_debug("#End# libjpeg, Success!! ret: %d", ret);
 
 #else
@@ -1273,7 +1275,7 @@ EXPORT_API int mm_util_jpeg_encode_to_file(const char *filename, void* src, int 
 		dst = malloc(dst_size);
 		if (dst) {
 			ret = mm_util_convert_colorspace(src, width, height, MM_UTIL_IMG_FMT_NV12, dst, MM_UTIL_IMG_FMT_YUV420);
-			ret = mm_image_encode_to_jpeg_file_with_libjpeg(filename, dst, width, height, MM_UTIL_JPEG_FMT_YUV420, quality);
+			ret = __mm_image_encode_to_jpeg_file_with_libjpeg(filename, dst, width, height, MM_UTIL_JPEG_FMT_YUV420, quality);
 			IMG_JPEG_FREE(dst);
 		} else {
 			TTRACE_END();
@@ -1283,7 +1285,7 @@ EXPORT_API int mm_util_jpeg_encode_to_file(const char *filename, void* src, int 
 		TTRACE_END();
 		return MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
 	} else {
-		ret = mm_image_encode_to_jpeg_file_with_libjpeg(filename, src, width, height, fmt, quality);
+		ret = __mm_image_encode_to_jpeg_file_with_libjpeg(filename, src, width, height, fmt, quality);
 	}
 	mm_util_debug("#END# libjpeg, Success!! ret: %d", ret);
 #endif
@@ -1323,7 +1325,7 @@ EXPORT_API int mm_util_jpeg_encode_to_memory(void **mem, int *size, void* src, i
 
 	#if LIBJPEG_TURBO
 	mm_util_debug("#START# libjpeg-turbo");
-	ret = mm_image_encode_to_jpeg_memory_with_libjpeg_turbo(mem, size, src, width, height, fmt, quality);
+	ret = __mm_image_encode_to_jpeg_memory_with_libjpeg_turbo(mem, size, src, width, height, fmt, quality);
 	mm_util_debug("#END# libjpeg-turbo, Success!! ret: %d", ret);
 	#else /* LIBJPEG_TURBO */
 	mm_util_debug("#START# libjpeg");
@@ -1334,7 +1336,7 @@ EXPORT_API int mm_util_jpeg_encode_to_memory(void **mem, int *size, void* src, i
 		dst = malloc(dst_size);
 		if (dst) {
 			ret = mm_util_convert_colorspace(src, width, height, MM_UTIL_IMG_FMT_NV12, dst, MM_UTIL_IMG_FMT_YUV420);
-			ret = mm_image_encode_to_jpeg_memory_with_libjpeg(mem, size, dst, width, height, MM_UTIL_JPEG_FMT_YUV420, quality);
+			ret = __mm_image_encode_to_jpeg_memory_with_libjpeg(mem, size, dst, width, height, MM_UTIL_JPEG_FMT_YUV420, quality);
 			IMG_JPEG_FREE(dst);
 		} else {
 			TTRACE_END();
@@ -1344,7 +1346,7 @@ EXPORT_API int mm_util_jpeg_encode_to_memory(void **mem, int *size, void* src, i
 		TTRACE_END();
 		return MM_UTIL_ERROR_NOT_SUPPORTED_FORMAT;
 	} else {
-		ret = mm_image_encode_to_jpeg_memory_with_libjpeg(mem, size, src, width, height, fmt, quality);
+		ret = __mm_image_encode_to_jpeg_memory_with_libjpeg(mem, size, src, width, height, fmt, quality);
 	}
 #endif /* LIBJPEG_TURBO */
 	mm_util_debug("#END# libjpeg, Success!! ret: %d", ret);
@@ -1393,14 +1395,14 @@ EXPORT_API int mm_util_decode_from_jpeg_file(mm_util_jpeg_yuv_data *decoded, con
 	if (magic[0] == 0xff && magic[1] == 0xd8) {
 		#if LIBJPEG_TURBO
 		mm_util_debug("#START# LIBJPEG_TURBO");
-		ret = mm_image_decode_from_jpeg_file_with_libjpeg_turbo(decoded, filename, fmt);
+		ret = __mm_image_decode_from_jpeg_file_with_libjpeg_turbo(decoded, filename, fmt);
 		mm_util_debug("decoded->data: %p\t width: %d\t height: %d\t size: %d\n", decoded->data, decoded->width, decoded->height, decoded->size);
 		mm_util_debug("#End# LIBJPEG_TURBO, Success!! ret: %d", ret);
 		#else
 		mm_util_debug("#START# libjpeg");
 		if (fmt == MM_UTIL_JPEG_FMT_NV12) {
 			unsigned int dst_size = 0;
-			ret = mm_image_decode_from_jpeg_file_with_libjpeg(decoded, filename, MM_UTIL_IMG_FMT_YUV420, downscale);
+			ret = __mm_image_decode_from_jpeg_file_with_libjpeg(decoded, filename, MM_UTIL_IMG_FMT_YUV420, downscale);
 			if (ret == MM_UTIL_ERROR_NONE) {
 				int err = MM_UTIL_ERROR_NONE;
 				err = mm_util_get_image_size(MM_UTIL_IMG_FMT_NV12, decoded->width, decoded->height, &dst_size);
@@ -1429,7 +1431,7 @@ EXPORT_API int mm_util_decode_from_jpeg_file(mm_util_jpeg_yuv_data *decoded, con
 				}
 			}
 		} else {
-			ret = mm_image_decode_from_jpeg_file_with_libjpeg(decoded, filename, fmt, downscale);
+			ret = __mm_image_decode_from_jpeg_file_with_libjpeg(decoded, filename, fmt, downscale);
 		}
 
 		mm_util_debug("decoded->data: %p\t width: %d\t height:%d\t size: %d\n", decoded->data, decoded->width, decoded->height, decoded->size);
@@ -1481,7 +1483,7 @@ EXPORT_API int mm_util_decode_from_jpeg_memory(mm_util_jpeg_yuv_data *decoded, v
 
 	#if LIBJPEG_TURBO
 	mm_util_debug("#START# libjpeg");
-	ret = mm_image_decode_from_jpeg_memory_with_libjpeg_turbo(decoded, src, size, fmt);
+	ret = __mm_image_decode_from_jpeg_memory_with_libjpeg_turbo(decoded, src, size, fmt);
 
 	mm_util_debug("decoded->data: %p\t width: %d\t height: %d\t size: %d\n", decoded->data, decoded->width, decoded->height, decoded->size);
 	mm_util_debug("#END# libjpeg, Success!! ret: %d", ret);
@@ -1492,7 +1494,7 @@ EXPORT_API int mm_util_decode_from_jpeg_memory(mm_util_jpeg_yuv_data *decoded, v
 		unsigned int dst_size = 0;
 		unsigned char *dst = NULL;
 
-		ret = mm_image_decode_from_jpeg_memory_with_libjpeg(decoded, src, size, MM_UTIL_IMG_FMT_YUV420, downscale);
+		ret = __mm_image_decode_from_jpeg_memory_with_libjpeg(decoded, src, size, MM_UTIL_IMG_FMT_YUV420, downscale);
 		if (ret == MM_UTIL_ERROR_NONE) {
 			int err = MM_UTIL_ERROR_NONE;
 			err = mm_util_get_image_size(MM_UTIL_IMG_FMT_NV12, decoded->width, decoded->height, &dst_size);
@@ -1520,7 +1522,7 @@ EXPORT_API int mm_util_decode_from_jpeg_memory(mm_util_jpeg_yuv_data *decoded, v
 			}
 		}
 	} else {
-		ret = mm_image_decode_from_jpeg_memory_with_libjpeg(decoded, src, size, fmt, downscale);
+		ret = __mm_image_decode_from_jpeg_memory_with_libjpeg(decoded, src, size, fmt, downscale);
 	}
 
 	mm_util_debug("decoded->data: %p\t width: %d\t height: %d\t size: %d\n", decoded->data, decoded->width, decoded->height, decoded->size);
@@ -1570,14 +1572,14 @@ EXPORT_API int mm_util_decode_from_jpeg_file_with_downscale(mm_util_jpeg_yuv_dat
 	if (magic[0] == 0xff && magic[1] == 0xd8) {
 		#if LIBJPEG_TURBO
 		mm_util_debug("#START# LIBJPEG_TURBO");
-		ret = mm_image_decode_from_jpeg_file_with_libjpeg_turbo(decoded, filename, fmt);
+		ret = __mm_image_decode_from_jpeg_file_with_libjpeg_turbo(decoded, filename, fmt);
 		mm_util_debug("decoded->data: %p\t width: %d\t height: %d\t size: %d\n", decoded->data, decoded->width, decoded->height, decoded->size);
 		mm_util_debug("#End# LIBJPEG_TURBO, Success!! ret: %d", ret);
 		#else
 		mm_util_debug("#START# libjpeg");
 		if (fmt == MM_UTIL_JPEG_FMT_NV12) {
 			unsigned int dst_size = 0;
-			ret = mm_image_decode_from_jpeg_file_with_libjpeg(decoded, filename, MM_UTIL_IMG_FMT_YUV420, downscale);
+			ret = __mm_image_decode_from_jpeg_file_with_libjpeg(decoded, filename, MM_UTIL_IMG_FMT_YUV420, downscale);
 			if (ret == MM_UTIL_ERROR_NONE) {
 				int err = MM_UTIL_ERROR_NONE;
 				err = mm_util_get_image_size(MM_UTIL_IMG_FMT_NV12, decoded->width, decoded->height, &dst_size);
@@ -1606,7 +1608,7 @@ EXPORT_API int mm_util_decode_from_jpeg_file_with_downscale(mm_util_jpeg_yuv_dat
 				}
 			}
 		} else {
-			ret = mm_image_decode_from_jpeg_file_with_libjpeg(decoded, filename, fmt, downscale);
+			ret = __mm_image_decode_from_jpeg_file_with_libjpeg(decoded, filename, fmt, downscale);
 		}
 
 		mm_util_debug("decoded->data: %p\t width: %d\t height:%d\t size: %d\n", decoded->data, decoded->width, decoded->height, decoded->size);
@@ -1663,7 +1665,7 @@ EXPORT_API int mm_util_decode_from_jpeg_memory_with_downscale(mm_util_jpeg_yuv_d
 
 	#if LIBJPEG_TURBO
 	mm_util_debug("#START# libjpeg");
-	ret = mm_image_decode_from_jpeg_memory_with_libjpeg_turbo(decoded, src, size, fmt);
+	ret = __mm_image_decode_from_jpeg_memory_with_libjpeg_turbo(decoded, src, size, fmt);
 
 	mm_util_debug("decoded->data: %p\t width: %d\t height: %d\t size: %d\n", decoded->data, decoded->width, decoded->height, decoded->size);
 	mm_util_debug("#END# libjpeg, Success!! ret: %d", ret);
@@ -1674,7 +1676,7 @@ EXPORT_API int mm_util_decode_from_jpeg_memory_with_downscale(mm_util_jpeg_yuv_d
 		unsigned int dst_size = 0;
 		unsigned char *dst = NULL;
 
-		ret = mm_image_decode_from_jpeg_memory_with_libjpeg(decoded, src, size, MM_UTIL_IMG_FMT_YUV420, downscale);
+		ret = __mm_image_decode_from_jpeg_memory_with_libjpeg(decoded, src, size, MM_UTIL_IMG_FMT_YUV420, downscale);
 		if (ret == MM_UTIL_ERROR_NONE) {
 			int err = MM_UTIL_ERROR_NONE;
 			err = mm_util_get_image_size(MM_UTIL_IMG_FMT_NV12, decoded->width, decoded->height, &dst_size);
@@ -1702,7 +1704,7 @@ EXPORT_API int mm_util_decode_from_jpeg_memory_with_downscale(mm_util_jpeg_yuv_d
 			}
 		}
 	} else {
-		ret = mm_image_decode_from_jpeg_memory_with_libjpeg(decoded, src, size, fmt, downscale);
+		ret = __mm_image_decode_from_jpeg_memory_with_libjpeg(decoded, src, size, fmt, downscale);
 	}
 
 	mm_util_debug("decoded->data: %p\t width: %d\t height: %d\t size: %d\n", decoded->data, decoded->width, decoded->height, decoded->size);
