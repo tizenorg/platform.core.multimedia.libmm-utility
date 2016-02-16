@@ -103,14 +103,14 @@ static int __read_gif(mm_util_gif_data *decoded, const char *filename, void *mem
 
 	mm_util_debug("mm_util_decode_from_gif");
 	if (filename) {
-		if ((GifFile = DGifOpenFileName(filename)) == NULL) {
+		if ((GifFile = DGifOpenFileName(filename, NULL)) == NULL) {
 			mm_util_error("could not open Gif File");
 			return MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 	} else if (memory) {
 		read_data_ptr.mem = memory;
 		read_data_ptr.size = 0;
-		if ((GifFile = DGifOpen(&read_data_ptr, __read_function)) == NULL) {
+		if ((GifFile = DGifOpen(&read_data_ptr, __read_function, NULL)) == NULL) {
 			mm_util_error("could not open Gif File");
 			return MM_UTIL_ERROR_INVALID_OPERATION;
 		}
@@ -244,7 +244,7 @@ error:
 		}
 		(void)free(screen_buffer);
 	}
-	if (DGifCloseFile(GifFile) == GIF_ERROR) {
+	if (DGifCloseFile(GifFile, NULL) == GIF_ERROR) {
 		mm_util_error("could not close file");
 		ret = MM_UTIL_ERROR_INVALID_OPERATION;
 	}
@@ -336,7 +336,7 @@ static int __save_buffer_to_gif(GifFileType *GifFile, GifByteType *OutputBuffer,
 	if (EGifPutImageDesc(GifFile, 0, 0, width, height, false, NULL) == GIF_ERROR) {
 		mm_util_error("could not put image description");
 		if (GifFile != NULL)
-			EGifCloseFile(GifFile);
+			EGifCloseFile(GifFile, NULL);
 		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
@@ -344,7 +344,7 @@ static int __save_buffer_to_gif(GifFileType *GifFile, GifByteType *OutputBuffer,
 		if (EGifPutLine(GifFile, Ptr, width) == GIF_ERROR) {
 			mm_util_error("could not put line");
 			if (GifFile != NULL)
-				EGifCloseFile(GifFile);
+				EGifCloseFile(GifFile, NULL);
 			return MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 		Ptr += width;
@@ -400,7 +400,7 @@ static int __write_gif(mm_util_gif_data *encoded, const char *filename, void **d
 		if (i == 0) {
 			__load_rgb_from_buffer((GifByteType *) encoded->frames[i].data, &red, &green, &blue, encoded->width, encoded->height);
 
-			if ((OutputColorMap = MakeMapObject(ColorMapSize, NULL)) == NULL) {
+			if ((OutputColorMap = GifMakeMapObject(ColorMapSize, NULL)) == NULL) {
 				mm_util_error("could not map object");
 				__outputbuffer_free(OutputBuffer, encoded->image_count);
 				free((char *)red);
@@ -408,7 +408,7 @@ static int __write_gif(mm_util_gif_data *encoded, const char *filename, void **d
 				free((char *)blue);
 				return MM_UTIL_ERROR_INVALID_OPERATION;
 			}
-			if (QuantizeBuffer(encoded->width, encoded->height, &ColorMapSize, red, green, blue, OutputBuffer[i], OutputColorMap->Colors) == GIF_ERROR) {
+			if (GifQuantizeBuffer(encoded->width, encoded->height, &ColorMapSize, red, green, blue, OutputBuffer[i], OutputColorMap->Colors) == GIF_ERROR) {
 				mm_util_error("could not quantize buffer");
 				__outputbuffer_free(OutputBuffer, encoded->image_count);
 				free((char *)red);
@@ -449,7 +449,7 @@ static int __write_gif(mm_util_gif_data *encoded, const char *filename, void **d
 	}
 
 	if (filename) {
-		if ((GifFile = EGifOpenFileName(filename, 0)) == NULL) {
+		if ((GifFile = EGifOpenFileName(filename, 0, NULL)) == NULL) {
 			mm_util_error("could not open file");
 			__outputbuffer_free(OutputBuffer, encoded->image_count);
 			return MM_UTIL_ERROR_INVALID_OPERATION;
@@ -458,7 +458,7 @@ static int __write_gif(mm_util_gif_data *encoded, const char *filename, void **d
 		write_data_ptr.mem = data;
 		write_data_ptr.size = 0;
 
-		if ((GifFile = EGifOpen(&write_data_ptr, __write_function)) == NULL) {
+		if ((GifFile = EGifOpen(&write_data_ptr, __write_function, NULL)) == NULL) {
 			mm_util_error("could not open File");
 			__outputbuffer_free(OutputBuffer, encoded->image_count);
 			return MM_UTIL_ERROR_INVALID_OPERATION;
@@ -468,7 +468,7 @@ static int __write_gif(mm_util_gif_data *encoded, const char *filename, void **d
 	if (EGifPutScreenDesc(GifFile, encoded->width, encoded->height, 8, 0, OutputColorMap) == GIF_ERROR) {
 		mm_util_error("could not put screen description");
 		if (GifFile != NULL)
-			EGifCloseFile(GifFile);
+			EGifCloseFile(GifFile, NULL);
 		__outputbuffer_free(OutputBuffer, encoded->image_count);
 		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
@@ -480,7 +480,7 @@ static int __write_gif(mm_util_gif_data *encoded, const char *filename, void **d
 		}
 	}
 
-	if (EGifCloseFile(GifFile) == GIF_ERROR) {
+	if (EGifCloseFile(GifFile, NULL) == GIF_ERROR) {
 		mm_util_error("could not close file");
 		__outputbuffer_free(OutputBuffer, encoded->image_count);
 		return MM_UTIL_ERROR_INVALID_OPERATION;
