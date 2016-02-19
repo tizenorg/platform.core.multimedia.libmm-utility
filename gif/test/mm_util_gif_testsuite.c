@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "\tGIF OPERATION SUCCESS\n");
 		{
 			if (decoded.frames) {
-				fprintf(stderr, "\t##Decoded data##: %p\t width: %lu\t height:%lu\t size: %llu\n", decoded.frames, decoded.width, decoded.height, decoded.size);
+				fprintf(stderr, "\t##Decoded data##: %p\t width: %lu\t height:%lu\t size: %llu\n", decoded.frames[0], decoded.width, decoded.height, decoded.size);
 				char filename[BUFFER_SIZE] = { 0, };
 				memset(filename, 0, BUFFER_SIZE);
 				{
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
 				mm_util_gif_encode_set_image_count(&decoded, 1);
 				ret = mm_util_encode_gif_to_file(&decoded, filename);
 
-				free(decoded.frames[0].data);
+				free(decoded.frames[0]->data);
 				free(decoded.frames);
 			} else {
 				fprintf(stderr, "\tDECODED data is NULL\n");

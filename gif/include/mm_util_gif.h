@@ -45,14 +45,16 @@ typedef enum
 } mm_util_gif_format;
 
 typedef struct {
-	int delay_time;		   /**< pre-display delay in 0.01sec units */
-	void *data;		   /**< data */
+	unsigned long long delay_time;	/**< pre-display delay in 0.01sec units */
+	void *data;		   	/**< data */
+	unsigned long width;	  	/**< width */
+	unsigned long height;	  	/**< height */
 } mm_util_gif_frame_data;
 
 typedef struct {
-	mm_util_gif_frame_data *frames;		  /**< Frames*/
+	mm_util_gif_frame_data **frames;	  /**< Frames*/
 	unsigned long width;			  /**< width */
-	unsigned long height;			  /**< heigt */
+	unsigned long height;			  /**< height */
 	unsigned long long size;		  /**< size */
 	unsigned int image_count;		  /**< ImageCount */
 } mm_util_gif_data;
@@ -184,7 +186,7 @@ void mm_util_gif_encode_set_height(mm_util_gif_data * data, unsigned long height
  * @since                             R1, 1.0
  */
 void mm_util_gif_encode_set_image_count(mm_util_gif_data * data, unsigned int image_count);
-#if 0
+
 /**
  * This function sets the time delay after which the particular image of the gif should be displayed.
  *
@@ -196,7 +198,7 @@ void mm_util_gif_encode_set_image_count(mm_util_gif_data * data, unsigned int im
  * @since                             R1, 1.0
  */
 void mm_util_gif_encode_set_frame_delay_time(mm_util_gif_frame_data * frame, unsigned long long delay_time);
-#endif
+
 #ifdef __cplusplus
 }
 #endif
