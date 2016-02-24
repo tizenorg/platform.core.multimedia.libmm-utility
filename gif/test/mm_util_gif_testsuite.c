@@ -69,7 +69,9 @@ int main(int argc, char *argv[])
 					snprintf(filename, BUFFER_SIZE, "%s%s", DECODE_RESULT_PATH, "gif");
 				}
 				mm_util_gif_encode_set_image_count(&decoded, 1);
-				ret = mm_util_encode_gif_to_file(&decoded, filename);
+				ret = mm_util_encode_open_gif_file(&decoded, filename);
+				ret = mm_util_encode_gif(&decoded);
+				ret = mm_util_encode_close_gif(&decoded);
 
 				free(decoded.frames[0]->data);
 				free(decoded.frames);

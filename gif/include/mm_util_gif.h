@@ -37,6 +37,22 @@ extern "C" {
 */
 
 /**
+ * Read data attached to decoding callback
+ */
+typedef struct {
+	unsigned long long size;
+	void *mem;
+} read_data;
+
+/**
+ * Write data attached to encoding callback
+ */
+typedef struct {
+	unsigned long long size;
+	void **mem;
+} write_data;
+
+/**
  * format for gif
  */
 typedef enum
@@ -46,17 +62,21 @@ typedef enum
 
 typedef struct {
 	unsigned long long delay_time;	/**< pre-display delay in 0.01sec units */
-	void *data;		   	/**< data */
 	unsigned long width;	  	/**< width */
 	unsigned long height;	  	/**< height */
+	void *data;		   	/**< data */
 } mm_util_gif_frame_data;
 
 typedef struct {
-	mm_util_gif_frame_data **frames;	  /**< Frames*/
 	unsigned long width;			  /**< width */
 	unsigned long height;			  /**< height */
 	unsigned long long size;		  /**< size */
 	unsigned int image_count;		  /**< ImageCount */
+	bool screen_desc_updated;		  /**< Check if screen description is updated */
+	unsigned int current_count;		  /**< ImageCount */
+	write_data write_data_ptr;		  /**< Encoded output data attached to callback */
+	GifFileType *GifFile;			  /**< GifFile opened*/
+	mm_util_gif_frame_data **frames;	  /**< Frames*/
 } mm_util_gif_data;
 
 /**
@@ -124,10 +144,9 @@ unsigned long long mm_util_gif_decode_get_size(mm_util_gif_data * data);
 #endif
 
 /**
- * This function encodes raw data to gif file
+ * This function creates gif file for output file
  *
  * @param encoded  [in ]    pointer of mm_util_gif_data.
- *                            After using it, please free the allocated memory.
  * @param filename [out]    output file name on to which the encoded stream will be written.
  * @return                  This function returns zero on success, or negative value with error code.
  * @remark                  image_count should be set to a valid value depending on number of images
@@ -135,13 +154,12 @@ unsigned long long mm_util_gif_decode_get_size(mm_util_gif_data * data);
  * @see                     mm_util_gif_data
  * @since                   R1, 1.0
  */
-int mm_util_encode_gif_to_file(mm_util_gif_data * encoded, const char *filename);
+int mm_util_encode_open_gif_file(mm_util_gif_data *encoded, const char *filename);
 
 /**
- * This function encodes raw data to gif memory
+ * This function creates gif file for output memory
  *
  * @param encoded  [in ]    pointer of mm_util_gif_data.
- *                          After using it, please free the allocated memory.
  * @param filename [out]    output file memory on to which the encoded stream will be written.
  * @return                  This function returns zero on success, or negative value with error code.
  * @remark                  image_count should be set to a valid value depending on number of images
@@ -149,7 +167,32 @@ int mm_util_encode_gif_to_file(mm_util_gif_data * encoded, const char *filename)
  * @see                     mm_util_gif_data
  * @since                   R1, 1.0
  */
-int mm_util_encode_gif_to_memory(mm_util_gif_data * encoded, void **memory);
+int mm_util_encode_open_gif_memory(mm_util_gif_data *encoded, void **data);
+
+/**
+ * This function encodes raw data to gif file/memory
+ *
+ * @param encoded  [in ]    pointer of mm_util_gif_data.
+ * @param filename [out]    output file name on to which the encoded stream will be written.
+ * @return                  This function returns zero on success, or negative value with error code.
+ * @remark                  image_count should be set to a valid value depending on number of images
+ *                          to be encoded in the gif file.
+ * @see                     mm_util_gif_data
+ * @since                   R1, 1.0
+ */
+int mm_util_encode_gif(mm_util_gif_data *encoded);
+
+/**
+ * This function closes and deallocates all the memory allocated with giffile.
+ *
+ * @param encoded  [in ]    pointer of mm_util_gif_data.
+ * @return                  This function returns zero on success, or negative value with error code.
+ * @remark                  image_count should be set to a valid value depending on number of images
+ *                          to be encoded in the gif file.
+ * @see                     mm_util_gif_data
+ * @since                   R1, 1.0
+ */
+int mm_util_encode_close_gif(mm_util_gif_data *encoded);
 
 /**
  * This function sets width of the encoded image.
