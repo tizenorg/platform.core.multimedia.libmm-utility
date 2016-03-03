@@ -315,32 +315,56 @@ static void __load_rgb_from_buffer(GifByteType *buffer, GifByteType **red, GifBy
 	return;
 }
 
-static int __save_buffer_to_gif(GifFileType *GifFile, GifByteType *OutputBuffer, unsigned long original_width, unsigned long original_height, unsigned long width, unsigned long height, unsigned long long delay_time, ColorMapObject *OutputColorMap, unsigned char background_color)
+#define ABS(x)    ((x) > 0 ? (x) : (-(x)))
+static int __save_buffer_to_gif(GifFileType *GifFile, GifByteType *OutputBuffer, ColorMapObject *OutputColorMap, mm_util_gif_frame_data * frame)
 {
 	unsigned long i, j, pixels = 0;
 	GifByteType *Ptr = OutputBuffer;
-	static unsigned char extension[4] = { 0x04, 0x00, 0x00, 0xff };
-	unsigned long x = (original_width - width) / 2, y = (original_height - height) / 2;
+	static unsigned char extension[4] = {0, };
+	int z;
+	int transparent_index = 0, minDist = 256 * 256 * 256;
+	GifColorType *color;
 
 	mm_util_debug("__save_buffer_to_gif");
-	extension[1] = delay_time % 256;
-	extension[2] = delay_time / 256;
+
+	/* Find closest color in first color map for the transparent color. */
+	color = OutputColorMap->Colors;
+	for (z = 0; z < OutputColorMap->ColorCount; z++) {
+		int dr = ABS(color[z].Red - frame->transparent_color.Red);
+		int dg = ABS(color[z].Green - frame->transparent_color.Green);
+		int db = ABS(color[z].Blue - frame->transparent_color.Blue);
+
+		int dist = dr * dr + dg * dg + db * db;
+
+		if (minDist > dist) {
+			minDist = dist;
+			transparent_index = z;
+		}
+	}
+
+	extension[0] = frame->disposal_mode << 2;
+	if(frame->is_transparent) {
+		extension[0] |= 1;
+		extension[3] = transparent_index;
+	} else {
+		extension[3] = -1;
+	}
+	extension[1] = frame->delay_time % 256;
+	extension[2] = frame->delay_time / 256;
 
 	/* Dump graphics control block. */
 	EGifPutExtension(GifFile, GRAPHICS_EXT_FUNC_CODE, 4, extension);
 
-	if (EGifPutImageDesc(GifFile, 0, 0, original_width, original_height, false, OutputColorMap) == GIF_ERROR) {
+	if (EGifPutImageDesc(GifFile, frame->x, frame->y, frame->width, frame->height, false, OutputColorMap) == GIF_ERROR) {
 		mm_util_error("could not put image description");
 		if (GifFile != NULL)
 			EGifCloseFile(GifFile, NULL);
 		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
-	for (i = 0; i < original_height; i++) {
-		for (j = 0; j < original_width; j++) {
-			unsigned char c = background_color;
-			if ((i >= y) && (j >= x) && (i < (y + height)) && (j < (x + width)))
-				c = Ptr[pixels++];
+	for (i = 0; i < frame->height; i++) {
+		for (j = 0; j < frame->width; j++) {
+			unsigned char c = Ptr[pixels++];
 			if (EGifPutPixel(GifFile, c) == GIF_ERROR) {
 				mm_util_error("could not put pixel");
 				if (GifFile != NULL)
@@ -407,17 +431,12 @@ int mm_util_encode_close_gif(mm_util_gif_data *encoded)
 	return MM_UTIL_ERROR_NONE;
 }
 
-#define ABS(x)    ((x) > 0 ? (x) : (-(x)))
 static int __write_gif(mm_util_gif_data *encoded)
 {
 	int ColorMapSize;
 	unsigned int i = encoded->current_count;
 	GifByteType *red = NULL, *green = NULL, *blue = NULL, *OutputBuffer = NULL;
 	ColorMapObject *OutputColorMap = NULL;
-	unsigned char background_color;
-	int z;
-	int minIndex = 0, minDist = 0;
-	GifColorType *color;
 
 	if (!encoded->screen_desc_updated) {
 		if (EGifPutScreenDesc(encoded->GifFile, encoded->frames[0]->width, encoded->frames[0]->height, 8, 0, NULL) == GIF_ERROR) {
@@ -458,26 +477,19 @@ static int __write_gif(mm_util_gif_data *encoded)
 		free((char *)green);
 		free((char *)blue);
 
-		background_color = 0;
-		minIndex = 0;
-		minDist = 256 * 256 * 256;
-		/* Find closest color in first color map for the background color. */
-		color = OutputColorMap->Colors;
-		for (z = 0; z < OutputColorMap->ColorCount; z++) {
-			int dr = ABS(color[z].Red - 0xff);
-			int dg = ABS(color[z].Green - 0xff);
-			int db = ABS(color[z].Blue - 0xff);
+		encoded->frames[i]->transparent_color.Red = 0xff;
+		encoded->frames[i]->transparent_color.Green = 0xff;
+		encoded->frames[i]->transparent_color.Blue = 0xff;
 
-			int dist = dr * dr + dg * dg + db * db;
-
-			if (minDist > dist) {
-				minDist = dist;
-				minIndex = z;
-			}
+		if (!encoded->frames[i]->x && !encoded->frames[i]->y) {
+			encoded->frames[i]->x = (encoded->frames[0]->width - encoded->frames[i]->width) / 2;
+			encoded->frames[i]->y = (encoded->frames[0]->height - encoded->frames[i]->height) / 2;
 		}
-		background_color = minIndex;
 
-		if (__save_buffer_to_gif(encoded->GifFile, OutputBuffer, encoded->frames[0]->width, encoded->frames[0]->height, encoded->frames[i]->width, encoded->frames[i]->height, encoded->frames[i]->delay_time, OutputColorMap, background_color) != MM_UTIL_ERROR_NONE)
+		encoded->frames[i]->disposal_mode = MM_UTIL_GIF_DISPOSAL_UNSPECIFIED;
+		encoded->frames[i]->is_transparent = false;
+
+		if (__save_buffer_to_gif(encoded->GifFile, OutputBuffer, OutputColorMap, encoded->frames[i]) != MM_UTIL_ERROR_NONE)
 			return MM_UTIL_ERROR_INVALID_OPERATION;
 
 		free(OutputBuffer);
@@ -516,4 +528,21 @@ void mm_util_gif_encode_set_image_count(mm_util_gif_data *data, unsigned int ima
 void mm_util_gif_encode_set_frame_delay_time(mm_util_gif_frame_data *frame, unsigned long long delay_time)
 {
 	frame->delay_time = delay_time;
+}
+
+void mm_util_gif_encode_set_frame_disposal_mode(mm_util_gif_frame_data *frame, mm_util_gif_disposal disposal_mode)
+{
+	frame->disposal_mode = disposal_mode;
+}
+
+void mm_util_gif_encode_set_frame_position(mm_util_gif_frame_data *frame, unsigned long x, unsigned long y)
+{
+	frame->x = x;
+	frame->y = y;
+}
+
+void mm_util_gif_encode_set_frame_transparency_color(mm_util_gif_frame_data *frame, GifColorType transparent_color)
+{
+	frame->is_transparent = true;
+	frame->transparent_color = transparent_color;
 }
