@@ -327,6 +327,11 @@ static int __save_buffer_to_gif(GifFileType *GifFile, GifByteType *OutputBuffer,
 
 	mm_util_debug("__save_buffer_to_gif");
 
+	if (GifFile == NULL) {
+		mm_util_error("Invalid parameter: GifFileType");
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
+	}
+
 	/* Find closest color in first color map for the transparent color. */
 	color = OutputColorMap->Colors;
 	for (z = 0; z < OutputColorMap->ColorCount; z++) {
@@ -357,8 +362,7 @@ static int __save_buffer_to_gif(GifFileType *GifFile, GifByteType *OutputBuffer,
 
 	if (EGifPutImageDesc(GifFile, frame->x, frame->y, frame->width, frame->height, false, OutputColorMap) == GIF_ERROR) {
 		mm_util_error("could not put image description");
-		if (GifFile != NULL)
-			EGifCloseFile(GifFile, NULL);
+		EGifCloseFile(GifFile, NULL);
 		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
@@ -438,11 +442,15 @@ static int __write_gif(mm_util_gif_data *encoded)
 	GifByteType *red = NULL, *green = NULL, *blue = NULL, *OutputBuffer = NULL;
 	ColorMapObject *OutputColorMap = NULL;
 
+	if (encoded->GifFile == NULL) {
+		mm_util_error("Invalid parameter");
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
+	}
+
 	if (!encoded->screen_desc_updated) {
 		if (EGifPutScreenDesc(encoded->GifFile, encoded->frames[0]->width, encoded->frames[0]->height, 8, 0, NULL) == GIF_ERROR) {
 			mm_util_error("could not put screen description");
-			if (encoded->GifFile != NULL)
-				EGifCloseFile(encoded->GifFile, NULL);
+			EGifCloseFile(encoded->GifFile, NULL);
 			return MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 		encoded->screen_desc_updated = true;

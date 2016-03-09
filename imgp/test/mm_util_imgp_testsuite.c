@@ -159,16 +159,17 @@ int main(int argc, char *argv[])
 	uint64_t src_size = 0;
 	uint64_t dst_size = 0;
 	bool sync_mode = (strcmp(argv[1], "sync") == 0) ? TRUE : FALSE;
-	char *command = NULL;
-	unsigned int src_width = atoi(argv[4]);
-	unsigned int src_height = atoi(argv[5]);
+	char *filename = strdup(argv[2]);
+	char *command = strdup(argv[3]);
+	unsigned int src_width = (unsigned int)atoi(argv[4]);
+	unsigned int src_height = (unsigned int)atoi(argv[5]);
 	mm_util_img_format src_format = atoi(argv[6]);
-	unsigned int dst_width = atoi(argv[7]);
-	unsigned int dst_height = atoi(argv[8]);
+	unsigned int dst_width = (unsigned int)atoi(argv[7]);
+	unsigned int dst_height = (unsigned int)atoi(argv[8]);
 	mm_util_img_format dst_format = atoi(argv[9]);
 	mm_util_img_rotate_type rotation = atoi(argv[10]);
-	mm_util_img_rotate_type start_x = atoi(argv[11]);
-	mm_util_img_rotate_type start_y = atoi(argv[12]);
+	unsigned int start_x = (unsigned int)atoi(argv[11]);
+	unsigned int start_y = (unsigned int)atoi(argv[12]);
 	char output_file[40] = {};
 
 	/* async mode */
@@ -177,10 +178,6 @@ int main(int argc, char *argv[])
 	media_format_h fmt;
 
 	unsigned int size = 0;
-
-	command = (char *)malloc(MAX_STRING_LEN);
-	memset(command, 0x00, MAX_STRING_LEN);
-	snprintf(command, MAX_STRING_LEN, "%s", argv[3]);
 
 	mm_util_debug("command: %s src_width: %d, src_height: %d, src_format: %d, dst_width: %d, dst_height: %d, dst_format:%d, rotation:%d", command, src_width, src_height, src_format, dst_width, dst_height, dst_format, rotation);
 
@@ -193,7 +190,7 @@ int main(int argc, char *argv[])
 	dst = malloc(dst_size);
 
 	{ /* read input file */
-		FILE *fp = fopen(argv[2], "r");
+		FILE *fp = fopen(filename, "r");
 		if (fp == NULL) {
 			mm_util_debug("\tfile open failed %d\n", errno);
 			goto TEST_FAIL;
@@ -404,6 +401,7 @@ TEST_FAIL:
 	IMGP_FREE(src);
 	IMGP_FREE(dst);
 	IMGP_FREE(command);
+	IMGP_FREE(filename);
 	if (!sync_mode) {
 		media_format_unref(fmt);
 		mm_util_debug("Destory - src packet");
