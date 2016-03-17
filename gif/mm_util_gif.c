@@ -497,8 +497,11 @@ static int __write_gif(mm_util_gif_data *encoded)
 		encoded->frames[i]->disposal_mode = MM_UTIL_GIF_DISPOSAL_UNSPECIFIED;
 		encoded->frames[i]->is_transparent = false;
 
-		if (__save_buffer_to_gif(encoded->GifFile, OutputBuffer, OutputColorMap, encoded->frames[i]) != MM_UTIL_ERROR_NONE)
+		if (__save_buffer_to_gif(encoded->GifFile, OutputBuffer, OutputColorMap, encoded->frames[i]) != MM_UTIL_ERROR_NONE) {
+			mm_util_error("save_buffer_to_gif is failed");
+			free(OutputBuffer);
 			return MM_UTIL_ERROR_INVALID_OPERATION;
+		}
 
 		free(OutputBuffer);
 		encoded->current_count++;
