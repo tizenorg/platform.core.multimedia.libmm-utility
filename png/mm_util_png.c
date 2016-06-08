@@ -471,12 +471,8 @@ int write_png(void **data, mm_util_png_data *encoded, FILE *fp)
 	row_pointers = png_malloc(png_ptr, sizeof(png_bytep) * encoded->height);
 
 	for (row_index = 0; row_index < encoded->height; row_index++) {
-		row_pointers[row_index] = png_malloc(png_ptr, encoded->png.rowbytes);
-		memcpy(row_pointers[row_index], *data, encoded->png.rowbytes);
-		*data += encoded->png.rowbytes;
+		row_pointers[row_index] = (*data) + (row_index * encoded->png.rowbytes);
 	}
-
-	*data -= encoded->png.rowbytes * encoded->height;
 
 	png_write_info(png_ptr, info_ptr);
 	png_write_image(png_ptr, row_pointers);
