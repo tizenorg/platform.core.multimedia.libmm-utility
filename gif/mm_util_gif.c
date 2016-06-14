@@ -114,7 +114,10 @@ static int __read_gif(mm_util_gif_data *decoded, const char *filename, void *mem
 		mm_util_error("Gif File wrong decode parameters");
 		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
-
+	if (GifFile->SWidth <= 0 || GifFile->SHeight <= 0) {
+		mm_util_error("Gif File wrong decode width & height");
+		return MM_UTIL_ERROR_INVALID_OPERATION;
+	}
 	decoded->width = GifFile->SWidth;
 	decoded->height = GifFile->SHeight;
 	decoded->size = (unsigned long long)GifFile->SWidth * (unsigned long long)GifFile->SHeight * 4;
@@ -127,7 +130,7 @@ static int __read_gif(mm_util_gif_data *decoded, const char *filename, void *mem
 	}
 
 	Size = GifFile->SWidth * sizeof(GifPixelType);	/* Size in bytes one row. */
-	if ((screen_buffer[0] = (GifRowType) malloc(Size)) == NULL) {	/* First row. */
+	if ((screen_buffer[0] = (GifRowType) calloc(1, Size)) == NULL) {	/* First row. */
 		mm_util_error("Failed to allocate memory required, aborted.");
 		ret = MM_UTIL_ERROR_INVALID_OPERATION;
 		goto error;
@@ -137,7 +140,7 @@ static int __read_gif(mm_util_gif_data *decoded, const char *filename, void *mem
 		screen_buffer[0][i] = GifFile->SBackGroundColor;
 	for (i = 1; i < GifFile->SHeight; i++) {
 		/* Allocate the other rows, and set their color to background too: */
-		if ((screen_buffer[i] = (GifRowType) malloc(Size)) == NULL) {
+		if ((screen_buffer[i] = (GifRowType) calloc(1, Size)) == NULL) {
 			mm_util_error("Failed to allocate memory required, aborted.");
 			ret = MM_UTIL_ERROR_INVALID_OPERATION;
 			goto error;
@@ -157,6 +160,11 @@ static int __read_gif(mm_util_gif_data *decoded, const char *filename, void *mem
 		case IMAGE_DESC_RECORD_TYPE:
 			if (DGifGetImageDesc(GifFile) == GIF_ERROR) {
 				mm_util_error("could not get image description");
+				ret = MM_UTIL_ERROR_INVALID_OPERATION;
+				goto error;
+			}
+			if (GifFile->Image.Top < 0 || GifFile->Image.Left < 0 || GifFile->Image.Width <= 0 || GifFile->Image.Height <= 0) {
+				mm_util_error("Gif File wrong decode width & height");
 				ret = MM_UTIL_ERROR_INVALID_OPERATION;
 				goto error;
 			}
