@@ -1294,11 +1294,9 @@ static int __mm_util_transform_exec(mm_util_s *handle, media_packet_h src_packet
 
 	if (ret != MM_UTIL_ERROR_NONE) {
 		mm_util_error("__mm_util_processing failed");
-		IMGP_FREE(handle);
 		return MM_UTIL_ERROR_INVALID_PARAMETER;
 	}
 
-	media_format_unref(src_fmt);
 	media_format_unref(dst_fmt);
 
 	return ret;
