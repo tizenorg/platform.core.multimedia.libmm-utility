@@ -370,7 +370,6 @@ static int __save_buffer_to_gif(GifFileType *GifFile, GifByteType *OutputBuffer,
 
 	if (EGifPutImageDesc(GifFile, frame->x, frame->y, frame->width, frame->height, false, OutputColorMap) == GIF_ERROR) {
 		mm_util_error("could not put image description");
-		EGifCloseFile(GifFile, NULL);
 		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
 
@@ -379,8 +378,6 @@ static int __save_buffer_to_gif(GifFileType *GifFile, GifByteType *OutputBuffer,
 			unsigned char c = Ptr[pixels++];
 			if (EGifPutPixel(GifFile, c) == GIF_ERROR) {
 				mm_util_error("could not put pixel");
-				if (GifFile != NULL)
-					EGifCloseFile(GifFile, NULL);
 				return MM_UTIL_ERROR_INVALID_OPERATION;
 			}
 		}
@@ -435,10 +432,15 @@ int mm_util_encode_open_gif_memory(mm_util_gif_data *encoded, void **data)
 int mm_util_encode_close_gif(mm_util_gif_data *encoded)
 {
 	mm_util_debug("mm_util_encode_close_gif");
+	if (encoded->GifFile == NULL) {
+		mm_util_error("Invalid parameter");
+		return MM_UTIL_ERROR_INVALID_PARAMETER;
+	}
 	if (EGifCloseFile(encoded->GifFile, NULL) == GIF_ERROR) {
 		mm_util_error("could not close file");
 		return MM_UTIL_ERROR_INVALID_OPERATION;
 	}
+	encoded->GifFile = NULL;
 
 	return MM_UTIL_ERROR_NONE;
 }
@@ -458,7 +460,7 @@ static int __write_gif(mm_util_gif_data *encoded)
 	if (!encoded->screen_desc_updated) {
 		if (EGifPutScreenDesc(encoded->GifFile, encoded->frames[0]->width, encoded->frames[0]->height, 8, 0, NULL) == GIF_ERROR) {
 			mm_util_error("could not put screen description");
-			EGifCloseFile(encoded->GifFile, NULL);
+			mm_util_encode_close_gif(encoded);
 			return MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 		encoded->screen_desc_updated = true;
@@ -467,6 +469,7 @@ static int __write_gif(mm_util_gif_data *encoded)
 	for (i = encoded->current_count; i < encoded->image_count; i++) {
 		if ((OutputBuffer = (GifByteType *) malloc(encoded->frames[i]->width * encoded->frames[i]->height * sizeof(GifByteType))) == NULL) {
 			mm_util_error("Failed to allocate memory required, aborted.");
+			mm_util_encode_close_gif(encoded);
 			return MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 
@@ -479,6 +482,7 @@ static int __write_gif(mm_util_gif_data *encoded)
 			free((char *)green);
 			free((char *)blue);
 			free(OutputBuffer);
+			mm_util_encode_close_gif(encoded);
 			return MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 		if (GifQuantizeBuffer(encoded->frames[i]->width, encoded->frames[i]->height, &ColorMapSize, red, green, blue, OutputBuffer, OutputColorMap->Colors) == GIF_ERROR) {
@@ -487,6 +491,7 @@ static int __write_gif(mm_util_gif_data *encoded)
 			free((char *)green);
 			free((char *)blue);
 			free(OutputBuffer);
+			mm_util_encode_close_gif(encoded);
 			return MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 		free((char *)red);
@@ -508,6 +513,7 @@ static int __write_gif(mm_util_gif_data *encoded)
 		if (__save_buffer_to_gif(encoded->GifFile, OutputBuffer, OutputColorMap, encoded->frames[i]) != MM_UTIL_ERROR_NONE) {
 			mm_util_error("save_buffer_to_gif is failed");
 			free(OutputBuffer);
+			mm_util_encode_close_gif(encoded);
 			return MM_UTIL_ERROR_INVALID_OPERATION;
 		}
 
@@ -516,6 +522,7 @@ static int __write_gif(mm_util_gif_data *encoded)
 	}
 	encoded->size = encoded->write_data_ptr.size;
 
+	mm_util_encode_close_gif(encoded);
 	return MM_UTIL_ERROR_NONE;
 }
 
